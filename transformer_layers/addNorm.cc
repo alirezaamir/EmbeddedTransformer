@@ -44,6 +44,41 @@ void AddNormalize::compute(uint32_t *input, uint32_t *output) {
     }
 }
 
+void AddNormalize::compute(quant_bit_width *input, quant_bit_width *output) {
+    std::size_t width= seq_len_;
+    std::size_t height = seq_len_;
+    for (int i =0; i< seq_len_; i++){
+        auto* input_ptr = input + i * (input_dim_);
+        auto* output_ptr = output + i * (input_dim_);
+        quant_bit_width sum = 0;
+        for (int j=0; j< input_dim_; j++){
+            *output_ptr = (*output_ptr + *input_ptr);
+            sum += *output_ptr;
+            output_ptr ++;
+            input_ptr ++;
+        }
+
+        output_ptr = output + i * (input_dim_);
+        auto mean = (quant_bit_width)( (float) sum / (float) input_dim_);
+        // TODO: integer to float function
+        quant_bit_width variance = 0;
+        for (int j=0; j< input_dim_; j++){
+            variance+= (*output_ptr - mean) * (*output_ptr - mean);
+            output_ptr++;
+        }
+        variance = (float) variance / (float) input_dim_;
+        double sd = sqrt((double) variance);
+        // TODO: integer to float function
+        auto sd_inv = (float) (1/(sd + 0.0001)); // prevent zero divide!
+        output_ptr = output + i * (input_dim_);
+        for (int j=0; j< input_dim_; j++){
+            *output_ptr = ((*output_ptr - mean) * (sd_inv));
+            output_ptr ++;
+        }
+
+    }
+}
+
 
 void AddNormalize::computeRearranged(uint32_t *input, uint32_t *output) {
     auto* input_ptr = (int8_t*) (input );

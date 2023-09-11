@@ -21,6 +21,15 @@ void Transpose::transpose(const uint32_t* input, uint32_t* output, std::size_t w
     }
 }
 
+void Transpose::transpose(const quant_bit_width * input, quant_bit_width* output,
+                          std::size_t width, std::size_t height) {
+    for (std::size_t i = 0; i < height; i++) {
+        for (std::size_t j = 0; j < width; j++) {
+            output[i * width + j] = input[j * height + i];
+        }
+    }
+}
+
 void Transpose::transpose_rearranged(uint32_t* input, uint32_t* output, std::size_t width, std::size_t height,
                                      std::size_t kernelSize, std::size_t maxCol) {
     std::size_t tileRow = height / kernelSize;
@@ -43,9 +52,11 @@ void Transpose::transpose_rearranged(uint32_t* input, uint32_t* output, std::siz
     }
 }
 
-void Transpose::multihead_transpose(const uint32_t* input, uint32_t* output, std::size_t seq_len,
+
+
+void Transpose::multihead_transpose(const quant_bit_width * input, quant_bit_width* output, std::size_t seq_len,
                                     std::size_t head_hidden_size, std::size_t num_head) {
-    const uint32_t * initial_input = input;
+    const quant_bit_width * initial_input = input;
     for (int i=0; i < seq_len; i++){
         for (int n=0; n< num_head; n++){
             input = initial_input + i*head_hidden_size + n*seq_len*head_hidden_size;

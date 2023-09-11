@@ -47,8 +47,8 @@ void read_weight_from_file(const std::string& filename, uint32_t* kernel, int n_
 
 
 
-void blockWise2RowWise(const uint32_t * blockWise, uint32_t* rowWise, int n_row, int n_col){
-    uint32_t* initialRowWise = rowWise;
+void blockWise2RowWise(const quant_bit_width * blockWise, quant_bit_width* rowWise, int n_row, int n_col){
+    quant_bit_width* initialRowWise = rowWise;
     for (int col=0; col<n_col/MAX_COL; col++){
         rowWise = initialRowWise + col * MAX_COL;
         for (int row=0; row < n_row; row++){

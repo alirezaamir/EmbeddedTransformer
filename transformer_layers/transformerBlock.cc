@@ -6,7 +6,7 @@
 #include "debuggerFunctions.h"
 
 TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size,
-                                   std::size_t num_heads, std::size_t ff_size, uint32_t ** weightVector,
+                                   std::size_t num_heads, std::size_t ff_size, quant_bit_width ** weightVector,
                                    uint32_t ** flagVector,
                                    std::size_t kernelDim, std::size_t maxCol) {
 
@@ -23,12 +23,12 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
     condense = new Dense(num_heads* head_hidden_size, input_dim, weightVector[num_heads * 3],
                          flagVector[num_heads * 3]);
 
-    multihead_out = new uint32_t[pre_seq_len * num_heads * head_hidden_size >> 2]();
-    condense_out = new uint32_t[pre_seq_len * input_dim >> 2]();
-    intermediateFF = new uint32_t[pre_seq_len * ff_size >> 2]();
+    multihead_out = new quant_bit_width[pre_seq_len * num_heads * head_hidden_size]();
+    condense_out = new quant_bit_width[pre_seq_len * input_dim]();
+    intermediateFF = new quant_bit_width[pre_seq_len * ff_size]();
 
 #ifndef REARRANGE
-    multihead_out_reshape = new uint32_t[pre_seq_len * num_heads * head_hidden_size >> 2]();
+    multihead_out_reshape = new quant_bit_width[pre_seq_len * num_heads * head_hidden_size]();
 #endif
 
     addNorm = new AddNormalize(pre_seq_len, input_dim, kernelDim, maxCol);
@@ -41,16 +41,16 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
 TransformerBlock::~TransformerBlock() = default;
 
 
-void TransformerBlock::compute(std::size_t seq_len, uint32_t *input, uint32_t *output) {
+void TransformerBlock::compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
     system("m5 resetstats");
     for (int n=0; n<num_heads_; n++){
         std::cout << "Head : " << n << std::endl;
-        selfatten[n]->compute(seq_len, input, multihead_out + n * (seq_len * head_hidden_size_ >> 2));
+        selfatten[n]->compute(seq_len, input, multihead_out + n * (seq_len * head_hidden_size_));
     }
 
 #ifndef REARRANGE
     Transpose::multihead_transpose(multihead_out, multihead_out_reshape,
-                                   seq_len, head_hidden_size_ >> 2, num_heads_);
+                                   seq_len, head_hidden_size_, num_heads_);
     multihead_out = multihead_out_reshape;
 #endif
 

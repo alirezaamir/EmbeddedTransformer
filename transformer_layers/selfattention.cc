@@ -6,7 +6,7 @@
 #include "debuggerFunctions.h"
 
 SingleHeadSelfAttn::SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size,
-                                       uint32_t **weightVector, uint32_t **flagVector, std::size_t kernel_dim,
+                                       quant_bit_width **weightVector, uint32_t **flagVector, std::size_t kernel_dim,
                                        std::size_t max_col) {
 
     pre_seq_len_ = pre_seq_len;
@@ -19,11 +19,11 @@ SingleHeadSelfAttn::SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t inpu
     value_layer = new Dense(input_dim, head_hidden_size, weightVector[2], flagVector[2]);
     softmax = new Softmax();
 
-    query_layer_out = new uint32_t[pre_seq_len * head_hidden_size >> 2]();
-    key_layer_out = new uint32_t[pre_seq_len * head_hidden_size >> 2]();
-    key_transposed_layer_out = new uint32_t[pre_seq_len * head_hidden_size >> 2]();
-    value_layer_out = new uint32_t[pre_seq_len * head_hidden_size >> 2]();
-    attention_scores = new uint32_t[pre_seq_len * pre_seq_len >> 2]();
+    query_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    key_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    key_transposed_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    value_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    attention_scores = new quant_bit_width[pre_seq_len * pre_seq_len]();
 }
 
 SingleHeadSelfAttn::~SingleHeadSelfAttn() {
@@ -40,7 +40,7 @@ SingleHeadSelfAttn::~SingleHeadSelfAttn() {
     delete softmax;
 }
 
-void SingleHeadSelfAttn::compute(std::size_t seq_len, uint32_t *input, uint32_t *output) {
+void SingleHeadSelfAttn::compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
     query_layer->compute(seq_len, input, query_layer_out);
     key_layer->compute(seq_len, input, key_layer_out);
     value_layer->compute(seq_len, input, value_layer_out);
@@ -73,18 +73,18 @@ void SingleHeadSelfAttn::compute(std::size_t seq_len, uint32_t *input, uint32_t 
     simdCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out, nullptr,
                head_hidden_size_, seq_len, false);
 #else
-    smmCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out, nullptr,
-                head_hidden_size_, seq_len, false);
+    conventionalCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out,
+                head_hidden_size_, seq_len);
 #endif
     softmax->compute(attention_scores, seq_len);
 #ifdef SIMD
     simdCompute(seq_len, attention_scores, output, value_layer_out, nullptr,
                seq_len, head_hidden_size_, false);
 #else
-    smmCompute(seq_len, attention_scores, output, value_layer_out, nullptr,
-                seq_len, head_hidden_size_, false);
+    conventionalCompute(seq_len, attention_scores, output, value_layer_out,
+                seq_len, head_hidden_size_);
 #endif
 #endif
 
-    softmax->post_softmax(output, seq_len, head_hidden_size_);
+//    softmax->post_softmax(output, seq_len, head_hidden_size_);
 }

@@ -36,6 +36,38 @@ void Softmax::compute(uint32_t *input, std::size_t seq_len){
     }
 }
 
+void Softmax::compute(quant_bit_width *input, std::size_t seq_len){
+    std::size_t width = seq_len;
+    for (int i =0; i< seq_len; i++){
+        // Get the maximum value in the current row.
+        quant_bit_width max_val = input[i];
+        for (int j = 1; j < width; j++) {
+            if (input[i + j] > max_val) {
+                max_val = input[i + j];
+            }
+        }
+
+        // Subtract the maximum value from each element in the row.
+        for (int j = 0; j < width; j++) {
+            input[i + j] -= max_val;
+        }
+
+        // Exponentiate each element in the row.
+        for (int j = 0; j < width; j++) {
+            input[i + j] = (quant_bit_width) exp( input[i + j]); // TODO: implement casting to fixed-point
+        }
+
+        // Normalize the row so that the sum of all elements is 1.
+        quant_bit_width sum = 0;
+        for (int j = 0; j < width; j++) {
+            sum += input[i + j];
+        }
+        for (int j = 0; j < width; j++) {
+            input[i + j] /= sum;
+        }
+    }
+}
+
 void Softmax::computeRearranged(uint32_t *input, std::size_t seq_len, std::size_t kernelDim) {
     // We assume that the input value are fixed-point with 2 bits of fraction.
     for (int i =0; i< seq_len; i++){

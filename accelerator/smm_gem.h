@@ -7,10 +7,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "../transformer.h"
 
 void conventionalCompute(std::size_t seq_len, const uint32_t * input, uint32_t * output, uint32_t *weight,
                          std::size_t input_size_, std::size_t output_size_);
-
+void conventionalCompute(std::size_t seq_len, const  quant_bit_width * input, quant_bit_width * output,
+                         quant_bit_width *weight,
+                         std::size_t input_size_, std::size_t output_size_);
 void tiledCompute(std::size_t seq_len, const uint32_t * input, uint32_t * output, uint32_t *weight,
                          std::size_t input_size_, std::size_t output_size_);
 

@@ -4,7 +4,8 @@
 #include <memory.h>
 #include <iostream>
 
-Dense::Dense(std::size_t input_size, std::size_t output_size, uint32_t *weightDense, uint32_t *flagDense) {
+Dense::Dense(std::size_t input_size, std::size_t output_size,
+             quant_bit_width *weightDense, uint32_t *flagDense) {
     input_size_ = input_size;
     output_size_ = output_size;
     std::cout << "Input Size : " << input_size_ << std::endl;
@@ -19,7 +20,7 @@ Dense::~Dense() {
 //    delete[] bias;
 }
 
-void Dense::multiplyweight(std::size_t seq_len, uint32_t *input, uint32_t *output) {
+void Dense::multiplyweight(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
 #ifdef REARRANGE
 #ifdef SIMD
     simdComputeRearranged(seq_len, input, output, weight, flag, input_size_, output_size_, true);
@@ -30,12 +31,12 @@ void Dense::multiplyweight(std::size_t seq_len, uint32_t *input, uint32_t *outpu
 #ifdef SIMD
     simdCompute(seq_len, input, output, weight, flag, input_size_, output_size_, true);
 #else
-    smmCompute(seq_len, input, output, weight, flag, input_size_, output_size_, true);
+    conventionalCompute(seq_len, input, output, weight, input_size_, output_size_);
 #endif
 #endif
 }
 
-void Dense::addbias(std::size_t seq_len, uint32_t *output) {
+void Dense::addbias(std::size_t seq_len, quant_bit_width *output) {
 
     for (std::size_t idx = 0; idx < seq_len; idx++) {
         for (std::size_t feature_idx = 0; feature_idx < output_size_; feature_idx++) {
@@ -44,7 +45,7 @@ void Dense::addbias(std::size_t seq_len, uint32_t *output) {
     }
 }
 
-void Dense::compute(std::size_t seq_len, uint32_t *input, uint32_t *output) {
+void Dense::compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
     // input shape [batch_size, input_size_]
     // output shape [batch_size, output_size_]
 

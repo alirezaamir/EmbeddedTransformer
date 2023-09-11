@@ -11,12 +11,9 @@
 #define MAX_COL (SA_SIZE/4)
 
 
-void fill_kernel(uint32_t* kernel, int kernel_size){
-    for(int i=0; i<kernel_size; i++){
-        uint32_t result = 0;
-        for (int j=0; j<4; j++){
-            result |=  ((uint8_t)(rand() % 5  - 2)) << (8 * j);
-        }
+void fill_kernel(quant_bit_width* kernel, int kernel_size){
+    for(int i=0; i< kernel_size; i++){
+        auto result = (quant_bit_width)(rand() % 5  - 2);
         kernel[i]=result;
     }
 }
@@ -28,9 +25,9 @@ void print_binary(uint32_t value) {
     std::cout<< std::endl;
 }
 
-void fill_sparse_weight(uint32_t * kernel, uint32_t* sparse_flag, int n_row, int n_col, int sparsity){
+void fill_sparse_weight(quant_bit_width* kernel, uint32_t* sparse_flag, int n_row, int n_col, int sparsity){
     auto *flag_ptr = sparse_flag;
-    uint32_t *kernel_ptr = kernel;
+    quant_bit_width *kernel_ptr = kernel;
     int counter32 = 0;
     uint32_t flag32 = 0;
     for (int i=0; i<n_row/KERNEL_DIM; i++){
@@ -39,10 +36,8 @@ void fill_sparse_weight(uint32_t * kernel, uint32_t* sparse_flag, int n_row, int
                 int tile_index = (i * (n_col/MAX_COL) + j) * KERNEL_DIM * MAX_COL;
                 for (int ii=0; ii<KERNEL_DIM; ii++){
                     for (int jj=0; jj<MAX_COL; jj++){
-                        uint32_t result = 0;
-                        for (int k=0; k<4; k++){
-                            result |=  ((uint8_t)(rand() % 5  - 2)) << (8 * k);
-                        }
+                        quant_bit_width result = 0;
+                        result = (quant_bit_width)(rand() % 5  - 2);
                         #ifdef REARRANGE
 //                        kernel[tile_index + ii * MAX_COL + jj]=result;
                         *kernel_ptr=result;
@@ -123,7 +118,8 @@ void load_kernel_from_file(std::vector<uint32_t> &kernel, int n_row, int n_col, 
     file.close();
 }
 
-void saveWeight(int n_head, int qkv, int size, uint32_t *array, int sparsity_level, const std::string &dir_name) {
+void saveWeight(int n_head, int qkv, int size, quant_bit_width *array,
+                int sparsity_level, const std::string &dir_name) {
     // Write the kernel array to file
     std::string filename = dir_name + "/H" + std::to_string(n_head) + "_L" +
             std::to_string(qkv) + "_S" + std::to_string(sparsity_level) + ".bin";
@@ -163,20 +159,15 @@ void append_flags(uint32_t* new_flags, int new_flags_count) {
 
 void test(int sparsity_percentage){
     std::cout<<"First line" << std::endl;
-#ifdef REARRANGE
-    std::cout<<"Rearranged" << std::endl;
-#else
-    std::cout<<"TiCSAT" << std::endl;
-#endif
 
-    std::string dir_name = "/mnt/data";
+//    std::string dir_name = "/mnt/data";
 
-    uint32_t* tensor_in = new uint32_t [D_SEQ * D_MODEL >> 2];
+    auto* tensor_in = new quant_bit_width [D_SEQ * D_MODEL];
     #ifdef RELOAD_WEIGHT
-        loadWeight(-1, -1, D_SEQ * D_MODEL >> 2, tensor_in, 0, dir_name);
+        loadWeight(-1, -1, D_SEQ * D_MODEL, tensor_in, 0, dir_name);
     #else
-        fill_kernel(tensor_in, D_SEQ * D_MODEL >> 2);
-        saveWeight(-1, -1, D_SEQ * D_MODEL >> 2, tensor_in, 0, dir_name);
+        fill_kernel(tensor_in, D_SEQ * D_MODEL);
+//        saveWeight(-1, -1, D_SEQ * D_MODEL, tensor_in, 0, dir_name);
 
         std::ofstream outfile("flags_generated.h");
         outfile << "#pragma once" << std::endl;
@@ -188,29 +179,26 @@ void test(int sparsity_percentage){
     #endif
 
 #ifndef REARRANGE
-        uint32_t tensorInRowWise[D_SEQ * D_MODEL >> 2];
-        blockWise2RowWise(tensor_in, tensorInRowWise, D_SEQ, D_MODEL >> 2);
+        quant_bit_width tensorInRowWise[D_SEQ * D_MODEL];
+        blockWise2RowWise(tensor_in, tensorInRowWise, D_SEQ, D_MODEL);
         tensor_in = tensorInRowWise;
 #endif
 
+    auto* out = new quant_bit_width[D_SEQ*D_MODEL]();
 
-    uint32_t* out = new uint32_t [D_SEQ*D_MODEL >> 2]();
-
-    uint32_t * weightVec[3*NUM_HEAD+3];
+    quant_bit_width * weightVec[3*NUM_HEAD+3];
     uint32_t * flagVec[3*NUM_HEAD+3];
 
-    int head_qkv_size = D_Q* D_MODEL >> 2;
+    int head_qkv_size = D_Q* D_MODEL;
     int head_flag_size = (D_Q* D_MODEL) / (32* KERNEL_DIM * MAX_COL);
 
     for (int n=0; n<NUM_HEAD; n++){
-        volatile auto query_kernel = new uint32_t [D_Q* D_MODEL >> 2]();
-        volatile auto query_flag = new uint32_t [(D_Q* D_MODEL) / (32* KERNEL_DIM * MAX_COL)]();
-
-        volatile auto key_kernel = new uint32_t [ D_Q* D_MODEL >> 2]();
-        volatile auto key_flag = new uint32_t [(D_Q* D_MODEL) / (32 * KERNEL_DIM * MAX_COL)]();
-
-        volatile auto value_kernel = new uint32_t [ D_Q* D_MODEL >> 2]();
-        volatile auto value_flag = new uint32_t [D_Q* D_MODEL / (32* KERNEL_DIM * MAX_COL)]();
+        auto query_kernel = new quant_bit_width [D_Q* D_MODEL]();
+        auto query_flag = new uint32_t [(D_Q* D_MODEL) / (32* KERNEL_DIM * MAX_COL)]();
+        auto key_kernel = new quant_bit_width [ D_Q* D_MODEL]();
+        auto key_flag = new uint32_t [(D_Q* D_MODEL) / (32 * KERNEL_DIM * MAX_COL)]();
+        auto value_kernel = new quant_bit_width [ D_Q* D_MODEL]();
+        auto value_flag = new uint32_t [D_Q* D_MODEL / (32* KERNEL_DIM * MAX_COL)]();
 
 #ifdef RELOAD_WEIGHT
         loadWeight(n, 0, head_qkv_size, query_kernel, sparsity_percentage, dir_name);
@@ -227,34 +215,34 @@ void test(int sparsity_percentage){
         #endif
     #endif
 #else
-        fill_sparse_weight(query_kernel, query_flag, D_MODEL, D_Q >> 2, sparsity_percentage);
-        fill_sparse_weight(key_kernel, key_flag, D_MODEL, D_Q >> 2, sparsity_percentage);
-        fill_sparse_weight(value_kernel, value_flag, D_MODEL, D_Q >> 2, sparsity_percentage);
-        if (!std::filesystem::exists(dir_name)) {
-            std::filesystem::create_directory(dir_name);
-        }
+        fill_sparse_weight(query_kernel, query_flag, D_MODEL, D_Q , sparsity_percentage);
+        fill_sparse_weight(key_kernel, key_flag, D_MODEL, D_Q, sparsity_percentage);
+        fill_sparse_weight(value_kernel, value_flag, D_MODEL, D_Q, sparsity_percentage);
+//        if (!std::filesystem::exists(dir_name)) {
+//            std::filesystem::create_directory(dir_name);
+//        }
+//
+//        saveWeight(n, 0, head_qkv_size, query_kernel, sparsity_percentage, dir_name);
+//        saveWeight(n, 1, head_qkv_size, key_kernel, sparsity_percentage, dir_name);
+//        saveWeight(n, 2, head_qkv_size, value_kernel, sparsity_percentage, dir_name);
 
-        saveWeight(n, 0, head_qkv_size, query_kernel, sparsity_percentage, dir_name);
-        saveWeight(n, 1, head_qkv_size, key_kernel, sparsity_percentage, dir_name);
-        saveWeight(n, 2, head_qkv_size, value_kernel, sparsity_percentage, dir_name);
-
-        saveWeight(n, 10, head_flag_size, query_flag, sparsity_percentage, dir_name);
-        saveWeight(n, 11, head_flag_size, key_flag, sparsity_percentage, dir_name);
-        saveWeight(n, 12, head_flag_size, value_flag, sparsity_percentage, dir_name);
+//        saveWeight(n, 10, head_flag_size, query_flag, sparsity_percentage, dir_name);
+//        saveWeight(n, 11, head_flag_size, key_flag, sparsity_percentage, dir_name);
+//        saveWeight(n, 12, head_flag_size, value_flag, sparsity_percentage, dir_name);
         append_flags(query_flag, head_flag_size);
         append_flags(key_flag, head_flag_size);
         append_flags(value_flag, head_flag_size);
 #endif
 
 #ifndef REARRANGE
-    uint32_t* queryRowWise = new uint32_t [D_MODEL * D_Q >> 2];
-    blockWise2RowWise(query_kernel, queryRowWise, D_MODEL, D_Q >> 2);
+        auto* queryRowWise = new quant_bit_width [D_MODEL * D_Q ];
+    blockWise2RowWise(query_kernel, queryRowWise, D_MODEL, D_Q);
     query_kernel = queryRowWise;
-    uint32_t* keyRowWise = new uint32_t [D_MODEL * D_Q >> 2];
-    blockWise2RowWise(key_kernel, keyRowWise, D_MODEL, D_Q >> 2);
+    auto* keyRowWise = new quant_bit_width [D_MODEL * D_Q];
+    blockWise2RowWise(key_kernel, keyRowWise, D_MODEL, D_Q);
     key_kernel = keyRowWise;
-    uint32_t* valueRowWise = new uint32_t [D_MODEL * D_Q >> 2];
-    blockWise2RowWise(value_kernel, valueRowWise, D_MODEL, D_Q >> 2);
+    auto* valueRowWise = new quant_bit_width [D_MODEL * D_Q];
+    blockWise2RowWise(value_kernel, valueRowWise, D_MODEL, D_Q);
     value_kernel = valueRowWise;
 #endif
 //        uint32_t tensorInRowWise[D_SEQ * D_MODEL >> 2];
@@ -298,13 +286,13 @@ void test(int sparsity_percentage){
         flagVec[n*3+2] = value_flag;
     }
 
-    volatile auto condense_kernel = new uint32_t [ NUM_HEAD * D_Q * D_MODEL >> 2]();
+    volatile auto condense_kernel = new quant_bit_width [ NUM_HEAD * D_Q * D_MODEL]();
     volatile auto condense_flag = new uint32_t [ NUM_HEAD * D_Q * D_MODEL / (32 * KERNEL_DIM * MAX_COL)]();
 
-    volatile auto ff0_kernel = new uint32_t [ D_MODEL* D_FF >> 2]();
+    volatile auto ff0_kernel = new quant_bit_width [ D_MODEL* D_FF]();
     volatile auto ff0_flag = new uint32_t [ D_MODEL* D_FF / (32 * KERNEL_DIM * MAX_COL)]();
 
-    volatile auto ff1_kernel = new uint32_t [ D_FF* D_MODEL >> 2]();
+    volatile auto ff1_kernel = new quant_bit_width [ D_FF* D_MODEL]();
     volatile auto ff1_flag = new uint32_t [ D_MODEL* D_FF / (32* KERNEL_DIM * MAX_COL)]();
 
     #ifdef RELOAD_WEIGHT
@@ -326,18 +314,18 @@ void test(int sparsity_percentage){
     #endif
     #endif
     #else
-        fill_sparse_weight(condense_kernel, condense_flag, D_MODEL, NUM_HEAD * D_Q >> 2, sparsity_percentage);
-        fill_sparse_weight(ff0_kernel, ff0_flag, D_MODEL, D_FF >> 2, sparsity_percentage);
-        fill_sparse_weight(ff1_kernel, ff1_flag, D_FF, D_MODEL >> 2, sparsity_percentage);
+        fill_sparse_weight(condense_kernel, condense_flag, D_MODEL, NUM_HEAD * D_Q, sparsity_percentage);
+        fill_sparse_weight(ff0_kernel, ff0_flag, D_MODEL, D_FF, sparsity_percentage);
+        fill_sparse_weight(ff1_kernel, ff1_flag, D_FF, D_MODEL, sparsity_percentage);
 
         int n = -1; // n=-1 means that we are not saving/loading a head
-        saveWeight(n, 0, NUM_HEAD * D_Q * D_MODEL >> 2, condense_kernel, sparsity_percentage, dir_name);
-        saveWeight(n, 1, D_MODEL* D_FF >> 2, ff0_kernel, sparsity_percentage, dir_name);
-        saveWeight(n, 2, D_MODEL* D_FF >> 2, ff1_kernel, sparsity_percentage, dir_name);
+//        saveWeight(n, 0, NUM_HEAD * D_Q * D_MODEL, condense_kernel, sparsity_percentage, dir_name);
+//        saveWeight(n, 1, D_MODEL* D_FF, ff0_kernel, sparsity_percentage, dir_name);
+//        saveWeight(n, 2, D_MODEL* D_FF, ff1_kernel, sparsity_percentage, dir_name);
 
-        saveWeight(n, 10, NUM_HEAD * D_Q * D_MODEL / (32 * KERNEL_DIM * MAX_COL), condense_flag, sparsity_percentage, dir_name);
-        saveWeight(n, 11, D_MODEL* D_FF / (32* KERNEL_DIM * MAX_COL), ff0_flag, sparsity_percentage, dir_name);
-        saveWeight(n, 12, D_MODEL* D_FF / (32* KERNEL_DIM * MAX_COL), ff1_flag, sparsity_percentage, dir_name);
+//        saveWeight(n, 10, NUM_HEAD * D_Q * D_MODEL / (32 * KERNEL_DIM * MAX_COL), condense_flag, sparsity_percentage, dir_name);
+//        saveWeight(n, 11, D_MODEL* D_FF / (32* KERNEL_DIM * MAX_COL), ff0_flag, sparsity_percentage, dir_name);
+//        saveWeight(n, 12, D_MODEL* D_FF / (32* KERNEL_DIM * MAX_COL), ff1_flag, sparsity_percentage, dir_name);
 
         append_flags(condense_flag, NUM_HEAD * D_Q * D_MODEL / (32 * KERNEL_DIM * MAX_COL));
         append_flags(ff0_flag, D_MODEL* D_FF / (32* KERNEL_DIM * MAX_COL));
@@ -349,14 +337,14 @@ void test(int sparsity_percentage){
     #endif
 
     #ifndef REARRANGE
-        uint32_t* condenseRowWise = new uint32_t [NUM_HEAD * D_Q * D_MODEL >> 2];
-        blockWise2RowWise(condense_kernel, condenseRowWise, NUM_HEAD * D_Q, D_MODEL >> 2);
+        auto* condenseRowWise = new quant_bit_width [NUM_HEAD * D_Q * D_MODEL];
+        blockWise2RowWise(condense_kernel, condenseRowWise, NUM_HEAD * D_Q, D_MODEL);
         condense_kernel = condenseRowWise;
-        uint32_t* ff0RowWise = new uint32_t [D_MODEL * D_FF >> 2];
-        blockWise2RowWise(ff0_kernel, ff0RowWise, D_MODEL, D_FF >> 2);
+        auto* ff0RowWise = new quant_bit_width [D_MODEL * D_FF];
+        blockWise2RowWise(ff0_kernel, ff0RowWise, D_MODEL, D_FF);
         ff0_kernel = ff0RowWise;
-        uint32_t* ff1RowWise = new uint32_t [D_FF * D_MODEL >> 2];
-        blockWise2RowWise(ff1_kernel, ff1RowWise, D_FF, D_MODEL >> 2);
+        auto* ff1RowWise = new quant_bit_width [D_FF * D_MODEL];
+        blockWise2RowWise(ff1_kernel, ff1RowWise, D_FF, D_MODEL);
         ff1_kernel = ff1RowWise;
     #endif
 
@@ -374,8 +362,6 @@ void test(int sparsity_percentage){
 }
 
 int main() {
-    for (int sparsity_level = 30; sparsity_level <= 95; sparsity_level+=30){
-        test(sparsity_level);
-    }
+    test(0);
     return 0;
 }
