@@ -104,3 +104,21 @@ void TransformerBlock::compute(std::size_t seq_len, quant_bit_width *input, quan
 //    std::cout<< "Total Error Output: " << error_total<<std::endl;
 
 }
+
+
+TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size,
+                                   std::size_t num_heads, std::size_t ff_size, quant_bit_width ** weightVector,
+                                   quant_bit_width ** biasVector) {
+
+    num_heads_ = num_heads;
+    head_hidden_size_ = head_hidden_size;
+    input_dim_ = input_dim;
+
+    addNorm = new AddNormalize(pre_seq_len, D_EMBEDDING, weightVector[0], biasVector[0]);
+
+}
+
+void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
+    addNorm->normalize(input);
+
+}

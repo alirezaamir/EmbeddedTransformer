@@ -13,4 +13,4 @@ file(GLOB transformer_SRC
         "accelerator/systolic_m2m.cc"
         )
 
-add_executable(FvllMontiTransformer transformer.cpp ${transformer_SRC})
+add_executable(FvllMontiTransformer epilepsyTransformer.cpp ${transformer_SRC})

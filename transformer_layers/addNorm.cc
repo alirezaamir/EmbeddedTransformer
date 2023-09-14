@@ -79,6 +79,46 @@ void AddNormalize::compute(quant_bit_width *input, quant_bit_width *output) {
     }
 }
 
+AddNormalize::AddNormalize(std::size_t seq_len, std::size_t input_dim,
+                           quant_bit_width * weight, quant_bit_width * bias) {
+    input_dim_ = input_dim;
+    seq_len_ = seq_len;
+    weight_ = weight;
+    bias_ = bias;
+}
+
+void AddNormalize::normalize(quant_bit_width *input) {
+    for (int i =0; i< seq_len_; i++){
+        auto* input_ptr = input + i * (input_dim_);
+        int sum = 0;
+        for (int j=0; j< input_dim_; j++){
+            sum += *input_ptr;
+            input_ptr ++;
+        }
+
+        input_ptr = input + i * (input_dim_);
+        auto mean = (quant_bit_width)( (float) sum / (float) input_dim_);
+
+        int variance = 0;
+        for (int j=0; j< input_dim_; j++){
+            variance += MUL((*input_ptr - mean), (*input_ptr - mean));
+            input_ptr++;
+        }
+        float variance_float = (float) variance / (float) (input_dim_);
+        variance_float = variance_float / (float) (1 << NUM_FRACTION_BITS);
+        float sd = sqrtf(variance_float);
+        auto sd_inv = (float) (1/(sd + 0.00001)); // prevent zero divide!
+        auto sd_inv_int = (quant_bit_width) (sd_inv * (1 << NUM_FRACTION_BITS));
+        input_ptr = input + i * (input_dim_);
+        for (int j=0; j< input_dim_; j++){
+            *input_ptr = (quant_bit_width) MUL((*input_ptr - mean), sd_inv_int);
+            *input_ptr = (quant_bit_width) (MUL((*input_ptr), weight_[j]) + bias_[j]);
+            input_ptr ++;
+        }
+
+    }
+}
+
 
 void AddNormalize::computeRearranged(uint32_t *input, uint32_t *output) {
     auto* input_ptr = (int8_t*) (input );
