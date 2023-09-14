@@ -526,9 +526,10 @@ void conventionalCompute(std::size_t seq_len, const uint32_t *input, uint32_t *o
     }
 }
 
-void conventionalCompute(std::size_t seq_len, const quant_bit_width *input, quant_bit_width *output,
+int conventionalCompute(std::size_t seq_len, const quant_bit_width *input, quant_bit_width *output,
                          quant_bit_width *weight,
                          std::size_t input_size_, std::size_t output_size_) {
+    int num_add_mul = 0;
     for (int length = 0; length < seq_len; length++) {
         for (int out_idx = 0; out_idx < output_size_; out_idx++) {
             auto *weight_ptr = weight + out_idx;
@@ -537,12 +538,13 @@ void conventionalCompute(std::size_t seq_len, const quant_bit_width *input, quan
             quant_bit_width sum = 0;
             for (int i = 0; i < input_size_; i++) {
                 sum += *(weight_ptr) * (*(input_ptr));
+                num_add_mul += 2;
                 input_ptr++;
             }
             *(output_ptr) = sum;
-
         }
     }
+    return num_add_mul;
 }
 
 void tiledCompute(std::size_t seq_len, const uint32_t *input, uint32_t *output, uint32_t *weight,

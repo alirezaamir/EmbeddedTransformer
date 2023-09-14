@@ -73,16 +73,18 @@ void SingleHeadSelfAttn::compute(std::size_t seq_len, quant_bit_width *input, qu
     simdCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out, nullptr,
                head_hidden_size_, seq_len, false);
 #else
-    conventionalCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out,
+    int mul_add = conventionalCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out,
                 head_hidden_size_, seq_len);
+    std::cout<< "Number of operations: "<< mul_add << std::endl;
 #endif
     softmax->compute(attention_scores, seq_len);
 #ifdef SIMD
     simdCompute(seq_len, attention_scores, output, value_layer_out, nullptr,
                seq_len, head_hidden_size_, false);
 #else
-    conventionalCompute(seq_len, attention_scores, output, value_layer_out,
+    mul_add = conventionalCompute(seq_len, attention_scores, output, value_layer_out,
                 seq_len, head_hidden_size_);
+    std::cout<< "Number of operations: "<< mul_add << std::endl;
 #endif
 #endif
 

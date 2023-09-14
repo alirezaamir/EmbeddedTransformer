@@ -31,7 +31,8 @@ void Dense::multiplyweight(std::size_t seq_len, quant_bit_width *input, quant_bi
 #ifdef SIMD
     simdCompute(seq_len, input, output, weight, flag, input_size_, output_size_, true);
 #else
-    conventionalCompute(seq_len, input, output, weight, input_size_, output_size_);
+    int mul_add = conventionalCompute(seq_len, input, output, weight, input_size_, output_size_);
+    std::cout<< "Number of operations: "<< mul_add << std::endl;
 #endif
 #endif
 }
