@@ -7,6 +7,8 @@
 
 #define NUM_FRACTION_BITS 12
 #define MUL(x, y) (int32_t) (((int32_t)(x) * (int32_t)(y)) >> NUM_FRACTION_BITS)
+#define MUL_HQ(x, y) (int32_t) (((int32_t)(x) * (int32_t)(y)))
+#define SHIFT(x) ((x) >> NUM_FRACTION_BITS)
 
 #define D_Q 4
 #define D_SEQ 120

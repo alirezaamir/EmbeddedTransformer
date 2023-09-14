@@ -8,12 +8,16 @@
 #include "data_cpp/signal.cpp"
 #include "transformer_layers/transformerBlock.h"
 
-
+quant_bit_width out[D_SEQ * D_MODEL];
 float error_check(const quant_bit_width* groundTruth, const quant_bit_width* output, std::size_t length){
     long error = 0;
     for (int i=0; i<length; i++){
-        error += MUL(groundTruth[i] - output[i], groundTruth[i] - output[i]);
+        if (i<10)
+            std::cout << groundTruth[i] << " , " << output[i] << std::endl;
+        error += MUL_HQ(groundTruth[i] - output[i], groundTruth[i] - output[i]);
     }
+    error = (error >> NUM_FRACTION_BITS);
+
     return (float) error/ (float) length;
 }
 
@@ -24,12 +28,14 @@ void inference(){
 
     weightVec[0] = to_patch_embedding_layer_norm1_weight;
     biasVec[0] = to_patch_embedding_layer_norm1_bias;
+    weightVec[1] = to_patch_embedding_linear_weight;
+    biasVec[1] = to_patch_embedding_linear_bias;
 
 
     TransformerBlock selfatten(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec);
-    selfatten.computeFixedPoint(D_SEQ, input_signal, nullptr);
+    selfatten.computeFixedPoint(D_SEQ, input_signal, out);
 
-    std::cout<<"Error value : " << error_check(to_patch_embedding_layer_norm1, input_signal, D_SEQ * D_EMBEDDING) <<std::endl;
+    std::cout<<"Error value : " << error_check(to_patch_embedding_linear, out, D_SEQ * D_MODEL) <<std::endl;
 }
 
 int main() {

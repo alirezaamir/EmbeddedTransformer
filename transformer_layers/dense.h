@@ -5,12 +5,13 @@
 // #include <unordered_map>
 // #include <string>
 #include "util.h"
-#include "../accelerator/smm_gem.h"
 #include "../transformer.h"
 
 class Dense {
 public:
-    Dense(std::size_t input_dim, std::size_t output_dim, quant_bit_width *weight, uint32_t *flag);
+    Dense(std::size_t input_dim, std::size_t output_dim, quant_bit_width *weight, uint32_t* flag);
+
+    Dense(std::size_t input_dim, std::size_t output_dim, quant_bit_width *weight, quant_bit_width *bias);
 
     ~Dense();
 

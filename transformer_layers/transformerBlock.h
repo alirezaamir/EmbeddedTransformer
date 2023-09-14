@@ -38,6 +38,7 @@ private:
     Dense* condense;
     Dense* feedForward0;
     Dense* feedForward1;
+    Dense* patchEmbedding;
 
 #ifndef REARRANGE
     quant_bit_width* multihead_out_reshape;

@@ -99,11 +99,12 @@ void AddNormalize::normalize(quant_bit_width *input) {
         input_ptr = input + i * (input_dim_);
         auto mean = (quant_bit_width)( (float) sum / (float) input_dim_);
 
-        int variance = 0;
+        int64_t variance = 0;
         for (int j=0; j< input_dim_; j++){
-            variance += MUL((*input_ptr - mean), (*input_ptr - mean));
+            variance += MUL_HQ((*input_ptr - mean), (*input_ptr - mean));
             input_ptr++;
         }
+        variance = SHIFT(variance);
         float variance_float = (float) variance / (float) (input_dim_);
         variance_float = variance_float / (float) (1 << NUM_FRACTION_BITS);
         float sd = sqrtf(variance_float);
