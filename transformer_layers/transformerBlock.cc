@@ -115,19 +115,36 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
     head_hidden_size_ = head_hidden_size;
     input_dim_ = input_dim;
 
+    multihead_out = new quant_bit_width[(pre_seq_len+1) * num_heads * head_hidden_size]();
+
     addNorm = new AddNormalize(pre_seq_len, D_EMBEDDING, weightVector[0], biasVector[0]);
     patchEmbedding = new Dense(D_EMBEDDING, D_MODEL, weightVector[1], biasVector[1]);
     addNorm2 = new AddNormalize(pre_seq_len, D_MODEL, weightVector[2], biasVector[2]);
     token = new TokenPosEmbedding(posMatrix, clsTokenVector, pre_seq_len, input_dim, D_SEQ+1);
+
+    transformer_layer_0_0_addNorm = new AddNormalize((pre_seq_len + 1), D_MODEL, weightVector[3], biasVector[3]);
+
+    for (int n =0; n< num_heads; n++){
+        selfatten[n] = new SingleHeadSelfAttn((pre_seq_len+1), input_dim, head_hidden_size, weightVector+4+n*3);
+    }
+
 }
 
-void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
+void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input,
+                                         quant_bit_width *output, quant_bit_width *intermediate) {
     addNorm->normalize(input);
     patchEmbedding->compute(seq_len, input, output);
     addNorm2->normalize(output);
 
     token->clsConcatenate(output, input);
+    seq_len++;
     token->posEmbedding(input);
 
+    transformer_layer_0_0_addNorm->normalize(input);
+
+    for (int n=0; n<1; n++){
+        std::cout << "Head : " << n << std::endl;
+        selfatten[n]->compute(input, output + n * (seq_len * head_hidden_size_), intermediate);
+    }
 
 }

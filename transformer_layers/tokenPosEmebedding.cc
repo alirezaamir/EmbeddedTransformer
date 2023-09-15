@@ -22,7 +22,7 @@ TokenPosEmbedding::~TokenPosEmbedding()= default;
 void TokenPosEmbedding::clsConcatenate(quant_bit_width *input, quant_bit_width *concatenated_input) {
 
     // Copy cls_token_ into the concatenated array column-wise at the beginning
-    for (std::size_t i = 0; i < seq_len_; ++i) {
+    for (std::size_t i = 0; i < input_dim_; ++i) {
         concatenated_input[i] = cls_token_vector_[i];
     }
 
@@ -34,7 +34,7 @@ void TokenPosEmbedding::clsConcatenate(quant_bit_width *input, quant_bit_width *
 }
 
 void TokenPosEmbedding::posEmbedding(quant_bit_width *input) {
-    for (std::size_t i = 0; i < seq_len_; ++i) {
+    for (std::size_t i = 0; i < (seq_len_ +1); ++i) {
         for (std::size_t j = 0; j < input_dim_; ++j) {
             input[i * input_dim_ + j] += pos_matrix_[i* input_dim_ + j];
         }

@@ -23,7 +23,8 @@ public:
     virtual ~TransformerBlock();
 
     void compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
-    void computeFixedPoint(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
+    void computeFixedPoint(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output,
+                           quant_bit_width* intermediate);
 
 private:
     std::size_t num_heads_;
@@ -37,6 +38,7 @@ private:
     quant_bit_width* intermediateFFBlockWise;
     AddNormalize* addNorm;
     AddNormalize* addNorm2;
+    AddNormalize* transformer_layer_0_0_addNorm;
     TokenPosEmbedding* token;
     Dense* condense;
     Dense* feedForward0;

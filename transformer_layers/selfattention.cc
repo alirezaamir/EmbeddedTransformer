@@ -90,3 +90,42 @@ void SingleHeadSelfAttn::compute(std::size_t seq_len, quant_bit_width *input, qu
 
 //    softmax->post_softmax(output, seq_len, head_hidden_size_);
 }
+
+
+SingleHeadSelfAttn::SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size,
+                                       quant_bit_width **weightVector) {
+
+    pre_seq_len_ = pre_seq_len;
+    head_hidden_size_ = head_hidden_size;
+
+    query_layer = new Dense(input_dim, head_hidden_size_, weightVector[0], (quant_bit_width*) nullptr);
+    key_layer = new Dense(input_dim, head_hidden_size_, weightVector[1], (quant_bit_width*) nullptr);
+    value_layer = new Dense(input_dim, head_hidden_size_, weightVector[2], (quant_bit_width*) nullptr);
+    softmax = new Softmax();
+
+    query_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    key_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    key_transposed_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    value_layer_out = new quant_bit_width[pre_seq_len * head_hidden_size]();
+    attention_scores = new quant_bit_width[pre_seq_len * pre_seq_len]();
+}
+
+
+void SingleHeadSelfAttn::compute(quant_bit_width *input, quant_bit_width *output,
+                                 quant_bit_width* intermediate) {
+    query_layer_out = output;
+    key_layer_out = output + pre_seq_len_* head_hidden_size_;
+    value_layer_out = output + 2 * pre_seq_len_* head_hidden_size_;
+    key_transposed_layer_out = output + 3 * pre_seq_len_* head_hidden_size_;
+    query_layer->compute(pre_seq_len_, input, query_layer_out);
+    key_layer->compute(pre_seq_len_, input, key_layer_out);
+    value_layer->compute(pre_seq_len_, input, value_layer_out);
+
+    Transpose::transpose(key_layer_out, key_transposed_layer_out, pre_seq_len_, head_hidden_size_);
+    MatMul::scale(key_transposed_layer_out, 1, pre_seq_len_*head_hidden_size_);
+
+    MatMul::multiply(pre_seq_len_, query_layer_out, key_transposed_layer_out, intermediate,
+                     head_hidden_size_, pre_seq_len_);
+
+
+}

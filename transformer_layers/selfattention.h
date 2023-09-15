@@ -3,6 +3,7 @@
 #include "dense.h"
 #include "softmax.h"
 #include "transpose.h"
+#include "matmul.h"
 #include "../accelerator/smm_gem.h"
 #include "../transformer.h"
 
@@ -10,8 +11,11 @@ class SingleHeadSelfAttn{
     public:
         SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t input_dim_, std::size_t head_hidden_size,
                            quant_bit_width** weightVector, uint32_t** flagVector, std::size_t , std::size_t);
+        SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t input_dim_, std::size_t head_hidden_size,
+                           quant_bit_width** weightVector);
         ~SingleHeadSelfAttn();
         void compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
+        void compute(quant_bit_width *input, quant_bit_width *output, quant_bit_width *intermediate);
 
     private:
         Dense* query_layer;
