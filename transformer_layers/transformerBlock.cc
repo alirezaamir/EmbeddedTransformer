@@ -108,7 +108,8 @@ void TransformerBlock::compute(std::size_t seq_len, quant_bit_width *input, quan
 
 TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size,
                                    std::size_t num_heads, std::size_t ff_size, quant_bit_width ** weightVector,
-                                   quant_bit_width ** biasVector) {
+                                   quant_bit_width ** biasVector, quant_bit_width* clsTokenVector,
+                                   quant_bit_width* posMatrix) {
 
     num_heads_ = num_heads;
     head_hidden_size_ = head_hidden_size;
@@ -116,9 +117,17 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
 
     addNorm = new AddNormalize(pre_seq_len, D_EMBEDDING, weightVector[0], biasVector[0]);
     patchEmbedding = new Dense(D_EMBEDDING, D_MODEL, weightVector[1], biasVector[1]);
+    addNorm2 = new AddNormalize(pre_seq_len, D_MODEL, weightVector[2], biasVector[2]);
+    token = new TokenPosEmbedding(posMatrix, clsTokenVector, pre_seq_len, input_dim, D_SEQ+1);
 }
 
 void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
     addNorm->normalize(input);
     patchEmbedding->compute(seq_len, input, output);
+    addNorm2->normalize(output);
+
+    token->clsConcatenate(output, input);
+    token->posEmbedding(input);
+
+
 }

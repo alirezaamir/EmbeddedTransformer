@@ -25,17 +25,23 @@ float error_check(const quant_bit_width* groundTruth, const quant_bit_width* out
 void inference(){
     quant_bit_width * weightVec[3*NUM_HEAD+3];
     quant_bit_width * biasVec[3*NUM_HEAD+3];
+    quant_bit_width * clsTokenVector;
+    quant_bit_width * posMatrix;
 
     weightVec[0] = to_patch_embedding_layer_norm1_weight;
     biasVec[0] = to_patch_embedding_layer_norm1_bias;
     weightVec[1] = to_patch_embedding_linear_weight;
     biasVec[1] = to_patch_embedding_linear_bias;
+    weightVec[2] = to_patch_embedding_layer_norm2_weight;
+    biasVec[2] = to_patch_embedding_layer_norm2_bias;
+    clsTokenVector = cls_token;
+    posMatrix = pos_embedding;
 
-
-    TransformerBlock selfatten(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec);
+    TransformerBlock selfatten(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec,
+                               clsTokenVector, posMatrix);
     selfatten.computeFixedPoint(D_SEQ, input_signal, out);
 
-    std::cout<<"Error value : " << error_check(to_patch_embedding_linear, out, D_SEQ * D_MODEL) <<std::endl;
+    std::cout<<"Error value : " << error_check(pos_embedding_signal, input_signal, D_SEQ * D_MODEL) <<std::endl;
 }
 
 int main() {

@@ -4,6 +4,7 @@
 #include "selfattention.h"
 #include "addNorm.h"
 #include "dense.h"
+#include "tokenPosEmebedding.h"
 #include "../transformer.h"
 
 #ifndef FVLLMONTITRANSFORMER_MULTIHEADSELFATTENTION_H
@@ -17,7 +18,7 @@ public:
 
     TransformerBlock(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size, std::size_t num_heads,
                      std::size_t ff_size, quant_bit_width ** weightVector,
-                     quant_bit_width ** biasVector);
+                     quant_bit_width ** biasVector, quant_bit_width*, quant_bit_width* );
 
     virtual ~TransformerBlock();
 
@@ -35,6 +36,8 @@ private:
     quant_bit_width* intermediateFF;
     quant_bit_width* intermediateFFBlockWise;
     AddNormalize* addNorm;
+    AddNormalize* addNorm2;
+    TokenPosEmbedding* token;
     Dense* condense;
     Dense* feedForward0;
     Dense* feedForward1;
