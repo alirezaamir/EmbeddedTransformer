@@ -111,12 +111,12 @@ SingleHeadSelfAttn::SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t inpu
 }
 
 
-void SingleHeadSelfAttn::compute(quant_bit_width *input, quant_bit_width *output,
+void SingleHeadSelfAttn::compute(quant_bit_width *input, quant_bit_width *output, quant_bit_width *qkv,
                                  quant_bit_width* intermediate) {
-    query_layer_out = output;
-    key_layer_out = output + pre_seq_len_* head_hidden_size_;
-    value_layer_out = output + 2 * pre_seq_len_* head_hidden_size_;
-    key_transposed_layer_out = output + 3 * pre_seq_len_* head_hidden_size_;
+    query_layer_out = qkv;
+    key_layer_out = qkv + pre_seq_len_* head_hidden_size_;
+    value_layer_out = qkv + 2 * pre_seq_len_* head_hidden_size_;
+    key_transposed_layer_out = qkv + 3 * pre_seq_len_* head_hidden_size_;
     query_layer->compute(pre_seq_len_, input, query_layer_out);
     key_layer->compute(pre_seq_len_, input, key_layer_out);
     value_layer->compute(pre_seq_len_, input, value_layer_out);
@@ -128,6 +128,6 @@ void SingleHeadSelfAttn::compute(quant_bit_width *input, quant_bit_width *output
                      head_hidden_size_, pre_seq_len_);
 
     softmax->compute(intermediate, pre_seq_len_);
-
+    MatMul::multiply(pre_seq_len_, intermediate, value_layer_out, output, pre_seq_len_, head_hidden_size_);
 
 }

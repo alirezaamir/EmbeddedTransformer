@@ -131,7 +131,8 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
 }
 
 void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input,
-                                         quant_bit_width *output, quant_bit_width *intermediate) {
+                                         quant_bit_width *output, quant_bit_width *intermediate ,
+                                         quant_bit_width *qkv) {
     addNorm->normalize(input);
     patchEmbedding->compute(seq_len, input, output);
     addNorm2->normalize(output);
@@ -142,9 +143,9 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
 
     transformer_layer_0_0_addNorm->normalize(input);
 
-    for (int n=0; n<1; n++){
+    for (int n=0; n<NUM_HEAD; n++){
         std::cout << "Head : " << n << std::endl;
-        selfatten[n]->compute(input, output + n * (seq_len * head_hidden_size_), intermediate);
+        selfatten[n]->compute(input, output + n * (seq_len * head_hidden_size_), qkv, intermediate);
     }
 
 }

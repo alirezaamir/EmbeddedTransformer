@@ -15,7 +15,7 @@ class SingleHeadSelfAttn{
                            quant_bit_width** weightVector);
         ~SingleHeadSelfAttn();
         void compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
-        void compute(quant_bit_width *input, quant_bit_width *output, quant_bit_width *intermediate);
+        void compute(quant_bit_width *input, quant_bit_width *output, quant_bit_width *qkv, quant_bit_width *intermediate);
 
     private:
         Dense* query_layer;

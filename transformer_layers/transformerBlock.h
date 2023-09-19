@@ -24,7 +24,7 @@ public:
 
     void compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
     void computeFixedPoint(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output,
-                           quant_bit_width* intermediate);
+                           quant_bit_width* intermediate, quant_bit_width* qkv);
 
 private:
     std::size_t num_heads_;
