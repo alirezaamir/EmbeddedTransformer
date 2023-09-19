@@ -127,5 +127,7 @@ void SingleHeadSelfAttn::compute(quant_bit_width *input, quant_bit_width *output
     MatMul::multiply(pre_seq_len_, query_layer_out, key_transposed_layer_out, intermediate,
                      head_hidden_size_, pre_seq_len_);
 
+    softmax->compute(intermediate, pre_seq_len_);
+
 
 }

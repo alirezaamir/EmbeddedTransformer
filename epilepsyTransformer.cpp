@@ -62,7 +62,7 @@ void inference(){
                                clsTokenVector, posMatrix);
     selfatten.computeFixedPoint(D_SEQ, input_signal, out, intermediate);
 
-    std::cout<<"Error value : " << error_check(transformer_layers_0_0_fn_qkt, intermediate, (D_SEQ + 1) * (D_SEQ + 1));
+    std::cout<<"Error value : " << error_check(transformer_layers_0_0_fn_attn, intermediate, (D_SEQ + 1) * (D_SEQ + 1));
     std::cout << std::endl;
 }
 
