@@ -132,25 +132,31 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
 }
 
 void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input,
+                                         quant_bit_width *input_normalized,
                                          quant_bit_width *output, quant_bit_width *intermediate ,
                                          quant_bit_width *qkv) {
-    addNorm->normalize(input);
+    addNorm->normalize(input, input);
     patchEmbedding->compute(seq_len, input, output);
-    addNorm2->normalize(output);
+    addNorm2->normalize(output, output);
 
     token->clsConcatenate(output, input);
     seq_len++;
     token->posEmbedding(input);
 
-    transformer_layer_0_0_addNorm->normalize(input);
+
+    transformer_layer_0_0_addNorm->normalize(input, input_normalized);
 
     for (int n=0; n<NUM_HEAD; n++){
         std::cout << "Head : " << n << std::endl;
-        selfatten[n]->compute(input, output + n * (seq_len * head_hidden_size_), qkv, intermediate);
+        selfatten[n]->compute(input_normalized, output + n * (seq_len * head_hidden_size_), qkv, intermediate);
     }
     Transpose::multihead_transpose(output, intermediate,
                                    seq_len, head_hidden_size_, num_heads_);
 
     condense->compute(seq_len, intermediate, output);
+
+    transformer_layer_0_0_addNorm->add(input, output);
+
+
 
 }

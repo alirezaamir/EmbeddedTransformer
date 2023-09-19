@@ -13,7 +13,8 @@ public:
     AddNormalize(std::size_t, std::size_t, quant_bit_width*weight, quant_bit_width *bias);
     void compute(uint32_t *input, uint32_t *output);
     void compute(quant_bit_width *input, quant_bit_width *output);
-    void normalize(quant_bit_width *input);
+    void normalize(quant_bit_width *input, quant_bit_width* input_normalized);
+    void add(quant_bit_width *input, quant_bit_width* mha_out);
     void computeRearranged(uint32_t *input, uint32_t *output);
 private:
     std::size_t seq_len_;

@@ -11,6 +11,7 @@
 quant_bit_width out[(D_SEQ+1) * D_MODEL];
 quant_bit_width intermediate[(D_SEQ+1) * (D_SEQ+1)];
 quant_bit_width qkv[(D_SEQ+1) * D_MODEL];
+quant_bit_width input_normalized[(D_SEQ+1) * D_MODEL];
 float error_check(const quant_bit_width* groundTruth, const quant_bit_width* output, std::size_t length){
     long error = 0;
     for (int i=0; i<length; i++){
@@ -64,10 +65,10 @@ void inference(){
 
     TransformerBlock selfatten(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec,
                                clsTokenVector, posMatrix);
-    selfatten.computeFixedPoint(D_SEQ, input_signal, out, intermediate, qkv);
+    selfatten.computeFixedPoint(D_SEQ, input_signal, input_normalized, out, intermediate, qkv);
 
-    std::cout<<"Error value : " << error_check(transformer_layers_0_0_fn_projection,
-                                               out, (D_SEQ + 1) * D_MODEL);
+    std::cout<<"Error value : " << error_check(transformer_layers_0_0_fn_add,
+                                               input_signal, (D_SEQ + 1) * D_MODEL);
     std::cout << std::endl;
 }
 
