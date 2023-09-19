@@ -16,6 +16,7 @@ public:
     ~Dense();
 
     void compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
+    void activation(std::size_t length, quant_bit_width *input, quant_bit_width *output);
 
 private:
     void multiplyweight(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);

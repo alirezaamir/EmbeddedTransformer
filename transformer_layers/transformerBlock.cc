@@ -114,6 +114,7 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
     num_heads_ = num_heads;
     head_hidden_size_ = head_hidden_size;
     input_dim_ = input_dim;
+    ff_size_ = ff_size;
 
     addNorm = new AddNormalize(pre_seq_len, D_EMBEDDING, weightVector[0], biasVector[0]);
     patchEmbedding = new Dense(D_EMBEDDING, D_MODEL, weightVector[1], biasVector[1]);
@@ -128,6 +129,13 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
 
     condense = new Dense(num_heads* head_hidden_size, input_dim, weightVector[num_heads * 3 + 4],
                          biasVector[num_heads * 3 + 4]);
+
+    transformer_layer_0_1_addNorm = new AddNormalize((pre_seq_len + 1), input_dim, weightVector[num_heads * 3 + 5],
+                                                     biasVector[num_heads * 3 + 5]);
+    feedForward0 = new Dense(input_dim, ff_size, weightVector[num_heads * 3+ 6],
+                             biasVector[num_heads * 3 + 6]);
+    feedForward1 = new Dense(ff_size, input_dim, weightVector[num_heads * 3 + 7],
+                             biasVector[num_heads * 3 + 7]);
 
 }
 
@@ -157,6 +165,11 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
 
     transformer_layer_0_0_addNorm->add(input, output);
 
+    transformer_layer_0_1_addNorm->normalize(input, input_normalized);
+    feedForward0->compute(seq_len, input_normalized, intermediate);
+    feedForward0->activation(seq_len*ff_size_, intermediate, intermediate);
 
+    feedForward1->compute(seq_len, intermediate, output);
+    transformer_layer_0_1_addNorm->add(input, output);
 
 }

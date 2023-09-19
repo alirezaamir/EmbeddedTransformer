@@ -3,6 +3,7 @@
 //#include <mkl.h>
 #include <memory.h>
 #include <iostream>
+#include <cmath>
 
 Dense::Dense(std::size_t input_size, std::size_t output_size,
              quant_bit_width *weightDense, uint32_t *flagDense) {
@@ -67,3 +68,21 @@ void Dense::compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width
         addbias(seq_len, output);
     }
 }
+
+void Dense::activation(std::size_t length, quant_bit_width *input, quant_bit_width *output){
+    float in_float, in_tanh;
+    int32_t x3, in_tanh_fxp;
+    for (int i=0; i < length; i++){
+        x3 = MUL(MUL(input[i], input[i]), input[i]);
+        x3 = MUL(x3, 183); // 183 = 0.044715 in fixed-point 12 bit
+        x3 += input[i];
+        x3 = MUL(x3, 3268); // 3268 = sqrt(2/PI) in fixed-point 12 bit
+
+        in_float = (float) x3 /  (float) (1 << NUM_FRACTION_BITS);
+        in_tanh = tanhf(in_float);
+        in_tanh_fxp = (quant_bit_width) (in_tanh * (1 << NUM_FRACTION_BITS));
+        in_tanh_fxp += (1 << NUM_FRACTION_BITS);
+        output[i] = MUL(in_tanh_fxp, input[i] >> 1);
+    }
+}
+

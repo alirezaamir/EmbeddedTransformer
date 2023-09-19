@@ -40,6 +40,7 @@ private:
     AddNormalize* addNorm;
     AddNormalize* addNorm2;
     AddNormalize* transformer_layer_0_0_addNorm;
+    AddNormalize* transformer_layer_0_1_addNorm;
     TokenPosEmbedding* token;
     Dense* condense;
     Dense* feedForward0;
