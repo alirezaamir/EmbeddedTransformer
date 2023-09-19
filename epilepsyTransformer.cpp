@@ -27,8 +27,8 @@ float error_check(const quant_bit_width* groundTruth, const quant_bit_width* out
 
 
 void inference(){
-    quant_bit_width * weightVec[3*NUM_HEAD+3];
-    quant_bit_width * biasVec[3*NUM_HEAD+3];
+    quant_bit_width * weightVec[3*NUM_HEAD+5];
+    quant_bit_width * biasVec[3*NUM_HEAD+5];
     quant_bit_width * clsTokenVector;
     quant_bit_width * posMatrix;
 
@@ -59,12 +59,15 @@ void inference(){
     for (int i=0; i<3*4; i++)
         biasVec[i+startIndex] = (quant_bit_width *) nullptr;
 
+    weightVec[startIndex + 12] = transformer_layers_0_0_fn_projection_weight;
+    biasVec[startIndex + 12] = transformer_layers_0_0_fn_projection_bias;
+
     TransformerBlock selfatten(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec,
                                clsTokenVector, posMatrix);
     selfatten.computeFixedPoint(D_SEQ, input_signal, out, intermediate, qkv);
 
-    std::cout<<"Error value : " << error_check(transformer_layers_0_0_fn_attnv,
-                                               out + 2* (D_SEQ + 1) * 4, (D_SEQ + 1) * 4);
+    std::cout<<"Error value : " << error_check(transformer_layers_0_0_fn_projection,
+                                               out, (D_SEQ + 1) * D_MODEL);
     std::cout << std::endl;
 }
 

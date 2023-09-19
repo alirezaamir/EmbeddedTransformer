@@ -115,8 +115,6 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
     head_hidden_size_ = head_hidden_size;
     input_dim_ = input_dim;
 
-    multihead_out = new quant_bit_width[(pre_seq_len+1) * num_heads * head_hidden_size]();
-
     addNorm = new AddNormalize(pre_seq_len, D_EMBEDDING, weightVector[0], biasVector[0]);
     patchEmbedding = new Dense(D_EMBEDDING, D_MODEL, weightVector[1], biasVector[1]);
     addNorm2 = new AddNormalize(pre_seq_len, D_MODEL, weightVector[2], biasVector[2]);
@@ -127,6 +125,9 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
     for (int n =0; n< num_heads; n++){
         selfatten[n] = new SingleHeadSelfAttn((pre_seq_len+1), input_dim, head_hidden_size, weightVector+4+n*3);
     }
+
+    condense = new Dense(num_heads* head_hidden_size, input_dim, weightVector[num_heads * 3 + 4],
+                         biasVector[num_heads * 3 + 4]);
 
 }
 
@@ -147,5 +148,9 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
         std::cout << "Head : " << n << std::endl;
         selfatten[n]->compute(input, output + n * (seq_len * head_hidden_size_), qkv, intermediate);
     }
+    Transpose::multihead_transpose(output, intermediate,
+                                   seq_len, head_hidden_size_, num_heads_);
+
+    condense->compute(seq_len, intermediate, output);
 
 }
