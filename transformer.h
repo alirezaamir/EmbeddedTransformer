@@ -14,6 +14,7 @@
 #define D_SEQ 120
 #define D_MODEL 16
 #define NUM_HEAD 4
+#define NUM_LAYERS 4
 #define D_FF 4
 #define D_EMBEDDING 400
 

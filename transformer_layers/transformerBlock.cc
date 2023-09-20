@@ -20,7 +20,7 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
                                               kernelDim, maxCol);
     }
 
-    condense = new Dense(num_heads* head_hidden_size, input_dim, weightVector[num_heads * 3],
+    condense[0] = new Dense(num_heads* head_hidden_size, input_dim, weightVector[num_heads * 3],
                          flagVector[num_heads * 3]);
 
     multihead_out = new quant_bit_width[pre_seq_len * num_heads * head_hidden_size]();
@@ -32,9 +32,9 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
 #endif
 
     addNorm = new AddNormalize(pre_seq_len, input_dim, kernelDim, maxCol);
-    feedForward0 = new Dense(input_dim, ff_size, weightVector[num_heads * 3+ 1],
+    feedForward0[0] = new Dense(input_dim, ff_size, weightVector[num_heads * 3+ 1],
                              flagVector[num_heads * 3 + 1]);
-    feedForward1 = new Dense(ff_size, input_dim, weightVector[num_heads * 3 + 2],
+    feedForward1[0] = new Dense(ff_size, input_dim, weightVector[num_heads * 3 + 2],
                              flagVector[num_heads * 3 + 2]);
 }
 
@@ -55,7 +55,7 @@ void TransformerBlock::compute(std::size_t seq_len, quant_bit_width *input, quan
 #endif
 
     std::cout << "Condense"  << std::endl;
-    condense->compute(seq_len, multihead_out, condense_out);
+    condense[0]->compute(seq_len, multihead_out, condense_out);
 
     std::cout << "Add Norm"  << std::endl;
 #ifdef REARRANGE
@@ -67,10 +67,10 @@ void TransformerBlock::compute(std::size_t seq_len, quant_bit_width *input, quan
     system("m5 dumpresetstats");
 
     std::cout << "Feed Forward 0"  << std::endl;
-    feedForward0->compute(seq_len, condense_out, intermediateFF);
+    feedForward0[0]->compute(seq_len, condense_out, intermediateFF);
 
     std::cout << "Feed Forward 1"  << std::endl;
-    feedForward1->compute(seq_len, intermediateFF, output);
+    feedForward1[0]->compute(seq_len, intermediateFF, output);
 
     std::cout << "Add Norm"  << std::endl;
 #ifdef REARRANGE
@@ -121,22 +121,25 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
     addNorm2 = new AddNormalize(pre_seq_len, D_MODEL, weightVector[2], biasVector[2]);
     token = new TokenPosEmbedding(posMatrix, clsTokenVector, pre_seq_len, input_dim, D_SEQ+1);
 
-    transformer_layer_0_0_addNorm = new AddNormalize((pre_seq_len + 1), D_MODEL, weightVector[3], biasVector[3]);
 
-    for (int n =0; n< num_heads; n++){
-        selfatten[n] = new SingleHeadSelfAttn((pre_seq_len+1), input_dim, head_hidden_size, weightVector+4+n*3);
+    for (int l=0; l<4; l++){
+        transformer_layer_0_addNorm[l] = new AddNormalize((pre_seq_len + 1), D_MODEL, weightVector[l* 17 +3],
+                                                          biasVector[l*17 + 3]);
+
+        for (int n =0; n< num_heads; n++){
+            selfatten[l*num_heads + n] = new SingleHeadSelfAttn((pre_seq_len+1), input_dim, head_hidden_size, weightVector+l*17+4+n*3);
+        }
+
+        condense[l] = new Dense(num_heads* head_hidden_size, input_dim, weightVector[l*17 + num_heads * 3 + 4],
+                                biasVector[l*17 + num_heads * 3 + 4]);
+
+        transformer_layer_1_addNorm[l] = new AddNormalize((pre_seq_len + 1), input_dim, weightVector[l*17 + num_heads * 3 + 5],
+                                                          biasVector[l*17 + num_heads * 3 + 5]);
+        feedForward0[l] = new Dense(input_dim, ff_size, weightVector[l*17 + num_heads * 3+ 6],
+                                    biasVector[l*17 + num_heads * 3 + 6]);
+        feedForward1[l] = new Dense(ff_size, input_dim, weightVector[l*17 + num_heads * 3 + 7],
+                                    biasVector[l*17 + num_heads * 3 + 7]);
     }
-
-    condense = new Dense(num_heads* head_hidden_size, input_dim, weightVector[num_heads * 3 + 4],
-                         biasVector[num_heads * 3 + 4]);
-
-    transformer_layer_0_1_addNorm = new AddNormalize((pre_seq_len + 1), input_dim, weightVector[num_heads * 3 + 5],
-                                                     biasVector[num_heads * 3 + 5]);
-    feedForward0 = new Dense(input_dim, ff_size, weightVector[num_heads * 3+ 6],
-                             biasVector[num_heads * 3 + 6]);
-    feedForward1 = new Dense(ff_size, input_dim, weightVector[num_heads * 3 + 7],
-                             biasVector[num_heads * 3 + 7]);
-
 }
 
 void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input,
@@ -152,24 +155,26 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
     token->posEmbedding(input);
 
 
-    transformer_layer_0_0_addNorm->normalize(input, input_normalized);
+    for (int l=0; l< 4; l++){
+        transformer_layer_0_addNorm[l]->normalize(input, input_normalized);
 
-    for (int n=0; n<NUM_HEAD; n++){
-        std::cout << "Head : " << n << std::endl;
-        selfatten[n]->compute(input_normalized, output + n * (seq_len * head_hidden_size_), qkv, intermediate);
+        for (int n=0; n<NUM_HEAD; n++){
+            std::cout << "Head : " << n << std::endl;
+            selfatten[l*NUM_HEAD + n]->compute(input_normalized, output + n * (seq_len * head_hidden_size_), qkv, intermediate);
+        }
+        Transpose::multihead_transpose(output, intermediate,
+                                       seq_len, head_hidden_size_, num_heads_);
+
+        condense[l]->compute(seq_len, intermediate, output);
+
+        transformer_layer_0_addNorm[l]->add(input, output);
+
+        transformer_layer_1_addNorm[l]->normalize(input, input_normalized);
+        feedForward0[l]->compute(seq_len, input_normalized, intermediate);
+        feedForward0[l]->activation(seq_len*ff_size_, intermediate, intermediate);
+
+        feedForward1[l]->compute(seq_len, intermediate, output);
+        transformer_layer_1_addNorm[l]->add(input, output);
     }
-    Transpose::multihead_transpose(output, intermediate,
-                                   seq_len, head_hidden_size_, num_heads_);
-
-    condense->compute(seq_len, intermediate, output);
-
-    transformer_layer_0_0_addNorm->add(input, output);
-
-    transformer_layer_0_1_addNorm->normalize(input, input_normalized);
-    feedForward0->compute(seq_len, input_normalized, intermediate);
-    feedForward0->activation(seq_len*ff_size_, intermediate, intermediate);
-
-    feedForward1->compute(seq_len, intermediate, output);
-    transformer_layer_0_1_addNorm->add(input, output);
 
 }

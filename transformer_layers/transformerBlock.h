@@ -20,7 +20,7 @@ public:
                      std::size_t ff_size, quant_bit_width ** weightVector,
                      quant_bit_width ** biasVector, quant_bit_width*, quant_bit_width* );
 
-    virtual ~TransformerBlock();
+    ~TransformerBlock();
 
     void compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output);
     void computeFixedPoint(std::size_t seq_len, quant_bit_width *input,
@@ -32,19 +32,19 @@ private:
     std::size_t head_hidden_size_;
     std::size_t input_dim_;
     std::size_t ff_size_;
-    SingleHeadSelfAttn* selfatten[16];
+    SingleHeadSelfAttn* selfatten[NUM_LAYERS*NUM_HEAD];
     quant_bit_width* multihead_out;
     quant_bit_width* condense_out;
     quant_bit_width* intermediateFF;
     quant_bit_width* intermediateFFBlockWise;
     AddNormalize* addNorm;
     AddNormalize* addNorm2;
-    AddNormalize* transformer_layer_0_0_addNorm;
-    AddNormalize* transformer_layer_0_1_addNorm;
+    AddNormalize* transformer_layer_0_addNorm[NUM_LAYERS];
+    AddNormalize* transformer_layer_1_addNorm[NUM_LAYERS];
     TokenPosEmbedding* token;
-    Dense* condense;
-    Dense* feedForward0;
-    Dense* feedForward1;
+    Dense* condense[NUM_LAYERS];
+    Dense* feedForward0[NUM_LAYERS];
+    Dense* feedForward1[NUM_LAYERS];
     Dense* patchEmbedding;
 
 #ifndef REARRANGE
