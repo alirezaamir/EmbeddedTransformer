@@ -28,8 +28,8 @@ float error_check(const quant_bit_width* groundTruth, const quant_bit_width* out
 
 
 void inference(){
-    quant_bit_width * weightVec[4*(3*NUM_HEAD+4)+4];
-    quant_bit_width * biasVec[4*(3*NUM_HEAD+4)+4];
+    quant_bit_width * weightVec[NUM_LAYERS*(3*NUM_HEAD+5)+3];
+    quant_bit_width * biasVec[NUM_LAYERS*(3*NUM_HEAD+5)+3];
     WeightsAndBiases::getWeights(weightVec);
     WeightsAndBiases::getBiases(biasVec);
     quant_bit_width * clsTokenVector = WeightsAndBiases::getClassToken();
