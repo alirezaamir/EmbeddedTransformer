@@ -41,11 +41,13 @@ private:
     AddNormalize* addNorm2;
     AddNormalize* transformer_layer_0_addNorm[NUM_LAYERS];
     AddNormalize* transformer_layer_1_addNorm[NUM_LAYERS];
+    AddNormalize* mlp_head_norm;
     TokenPosEmbedding* token;
     Dense* condense[NUM_LAYERS];
     Dense* feedForward0[NUM_LAYERS];
     Dense* feedForward1[NUM_LAYERS];
     Dense* patchEmbedding;
+    Dense* mlp_head_linear;
 
 #ifndef REARRANGE
     quant_bit_width* multihead_out_reshape;

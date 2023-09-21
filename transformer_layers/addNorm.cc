@@ -127,8 +127,14 @@ void AddNormalize::normalize(quant_bit_width *input, quant_bit_width *input_norm
 }
 
 void AddNormalize::add(quant_bit_width* input, quant_bit_width* to_be_added){
+    int32_t sum;
     for (int i =0; i< seq_len_ * input_dim_; i++){
-        input[i] += to_be_added[i];
+        sum =  input[i] + to_be_added[i];
+        if ((quant_bit_width) sum != sum)     // In case of overflow in 16 bits
+            input[i] = (sum>0) ? INT16_MAX : INT16_MIN;
+        else
+            input[i] = (quant_bit_width) sum;
+
     }
 }
 

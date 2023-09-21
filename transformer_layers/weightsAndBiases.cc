@@ -105,6 +105,10 @@ void WeightsAndBiases::getWeights(quant_bit_width * weightVec[]){
     weightVec[weightVectorIndex++] = transformer_layers_3_1_fn_ff1_weight;
     weightVec[weightVectorIndex++] = transformer_layers_3_1_fn_ff2_weight;
 
+    /* *************************** MLP HEAD ***************************** */
+    weightVec[weightVectorIndex++] = mlp_head_layer_norm_weight;
+    weightVec[weightVectorIndex++] = mlp_head_linear_weight;
+
 }
 
 void WeightsAndBiases::getBiases(quant_bit_width * biasVec[]){
@@ -160,6 +164,9 @@ void WeightsAndBiases::getBiases(quant_bit_width * biasVec[]){
     biasVec[biasVectorIndex++] = transformer_layers_3_1_fn_ff1_bias;
     biasVec[biasVectorIndex++] = transformer_layers_3_1_fn_ff2_bias;
 
+    /* *************************** MLP HEAD ***************************** */
+    biasVec[biasVectorIndex++] = mlp_head_layer_norm_bias;
+    biasVec[biasVectorIndex++] = mlp_head_linear_bias;
 }
 
 quant_bit_width * WeightsAndBiases::getPosEmbedding(){

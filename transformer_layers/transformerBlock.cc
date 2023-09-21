@@ -140,6 +140,11 @@ TransformerBlock::TransformerBlock(std::size_t pre_seq_len, std::size_t input_di
         feedForward1[l] = new Dense(ff_size, input_dim, weightVector[l*17 + num_heads * 3 + 7],
                                     biasVector[l*17 + num_heads * 3 + 7]);
     }
+
+    mlp_head_norm = new AddNormalize(1, D_MODEL, weightVector[(NUM_LAYERS-1)*17 + NUM_HEAD *3 + 8 ],
+                                     biasVector[(NUM_LAYERS-1)*17 + NUM_HEAD *3 + 8 ]);
+    mlp_head_linear = new Dense(D_MODEL, D_MODEL, weightVector[(NUM_LAYERS-1)*17 + NUM_HEAD *3 + 9 ],
+                                biasVector[(NUM_LAYERS-1)*17 + NUM_HEAD *3 + 9 ]);
 }
 
 void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *input,
@@ -176,5 +181,8 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
         feedForward1[l]->compute(seq_len, intermediate, output);
         transformer_layer_1_addNorm[l]->add(input, output);
     }
+
+    mlp_head_norm->normalize(input, input_normalized);
+    mlp_head_linear->compute(1, input_normalized, output);
 
 }

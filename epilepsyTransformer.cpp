@@ -28,8 +28,8 @@ float error_check(const quant_bit_width* groundTruth, const quant_bit_width* out
 
 
 void inference(){
-    quant_bit_width * weightVec[NUM_LAYERS*(3*NUM_HEAD+5)+3];
-    quant_bit_width * biasVec[NUM_LAYERS*(3*NUM_HEAD+5)+3];
+    quant_bit_width * weightVec[NUM_LAYERS*(3*NUM_HEAD+5)+5];
+    quant_bit_width * biasVec[NUM_LAYERS*(3*NUM_HEAD+5)+5];
     WeightsAndBiases::getWeights(weightVec);
     WeightsAndBiases::getBiases(biasVec);
     quant_bit_width * clsTokenVector = WeightsAndBiases::getClassToken();
@@ -39,8 +39,8 @@ void inference(){
                                clsTokenVector, posMatrix);
     selfatten.computeFixedPoint(D_SEQ, input_signal, input_normalized, out, intermediate, qkv);
 
-    std::cout<<"Error value : " << error_check(transformer_layers_3_1_fn_add,
-                                               input_signal, (D_SEQ + 1) * D_MODEL);
+    std::cout<<"Error value : " << error_check(transformer_out,
+                                               out, 1 * D_MODEL);
     std::cout << std::endl;
 }
 
