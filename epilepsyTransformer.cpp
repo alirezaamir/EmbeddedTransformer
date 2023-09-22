@@ -3,10 +3,13 @@
 //
 
 #include <iostream>
+#include <cmath>
 #include "transformer.h"
 #include "data_cpp/signal.cpp"
+#include "data_cpp/signal_fft.cpp"
 #include "transformer_layers/transformerBlock.h"
 #include "transformer_layers/weightsAndBiases.h"
+#include "SYLT-FFT/fft.h"
 
 quant_bit_width out[(D_SEQ+1) * D_MODEL];
 quant_bit_width intermediate[(D_SEQ+1) * (D_SEQ+1)];
@@ -63,7 +66,45 @@ void inference(){
         std::cout<<"From the prototype of class " << i << " = " << distances[i] <<  std::endl;
 }
 
+void fft_func(){
+    fft_complex_t data[512];
+    // Initialize each element of the data array
+    for (int i = 0; i < 256; i++) {
+        data[i].r = (MUL_HQ(raw_signal[i], hanning[i])) ; // Set the real part
+        data[i].i = 0; // Set the imaginary part to 0
+    }
+    for (int i = 256; i < 512; i++) {  // Padding for nfft=2
+        data[i].r = 0; // Set the real part to 0
+        data[i].i = 0; // Set the imaginary part to 0
+    }
+
+    fft_fft(data, 9);
+    for (int index =0 ; index < 160; index++){
+        data[index].r = MUL_HQ(data[index].r, 25) >> (NUM_FRACTION_BITS - 9);
+        data[index].i = MUL_HQ(data[index].i, 25) >> (NUM_FRACTION_BITS - 9);
+        auto real2 = MUL_LONG(data[index].r, data[index].r) >> NUM_FRACTION_BITS;
+        auto imag2 = MUL_LONG(data[index].i, data[index].i) >> NUM_FRACTION_BITS;
+        float pow2 = (float)(real2 + imag2) / (float) (1<< NUM_FRACTION_BITS);
+        float amp = sqrtf(pow2);
+        float stft = logf(amp+ 1e-10f);
+        auto stft_int = (int16_t) (stft * (1<<NUM_FRACTION_BITS)) ;
+        //
+        int error = ((stft_int - log_amp[index] > 0) ?
+                (stft_int - log_amp[index]) :
+                (log_amp[index] - stft_int));
+        if (error > 100){
+            std::cout << "Error in "<<  index << " : " << error <<std::endl;
+            std::cout << "Real: " << data[index].r << ", Imag: " << data[index].i << std::endl;
+            std::cout << "Real^2:" <<real2 << ", Imag^2: " << imag2 << " -> " ;
+
+            std::cout << "Calc: " << stft_int << std::endl;
+            std::cout << "Ground truth: "<< log_amp[index] << std::endl;
+            std::cout << std::endl;
+        }
+    }
+}
+
 int main() {
-    inference();
+    fft_func();
     return 0;
 }
