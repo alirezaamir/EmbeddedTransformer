@@ -66,45 +66,81 @@ void inference(){
         std::cout<<"From the prototype of class " << i << " = " << distances[i] <<  std::endl;
 }
 
-void fft_func(){
-    fft_complex_t data[512];
+quant_bit_width compute_log_amp(int32_t real, int32_t imag){
+    real = MUL_HQ(real, 25) >> (NUM_FRACTION_BITS - 9);
+    imag = MUL_HQ(imag, 25) >> (NUM_FRACTION_BITS - 9);
+    auto real2 = MUL_LONG(real, real) >> NUM_FRACTION_BITS;
+    auto imag2 = MUL_LONG(imag, imag) >> NUM_FRACTION_BITS;
+    float pow2 = (float)(real2 + imag2) / (float) (1<< NUM_FRACTION_BITS);
+    float amp = sqrtf(pow2);
+    float stft = logf(amp+ 1e-10f);
+    auto stft_int = (quant_bit_width) (stft * (1<<NUM_FRACTION_BITS));
+
+    return stft_int;
+}
+
+void initialize_stft(fft_complex_t* data, const quant_bit_width * raw_input_signal){
     // Initialize each element of the data array
     for (int i = 0; i < 256; i++) {
-        data[i].r = (MUL_HQ(raw_signal[i], hanning[i])) ; // Set the real part
+        data[i].r = (MUL_HQ(raw_input_signal[i], hanning[i])) ; // Set the real part
         data[i].i = 0; // Set the imaginary part to 0
     }
     for (int i = 256; i < 512; i++) {  // Padding for nfft=2
         data[i].r = 0; // Set the real part to 0
         data[i].i = 0; // Set the imaginary part to 0
     }
+}
 
-    fft_fft(data, 9);
-    for (int index =0 ; index < 160; index++){
-        data[index].r = MUL_HQ(data[index].r, 25) >> (NUM_FRACTION_BITS - 9);
-        data[index].i = MUL_HQ(data[index].i, 25) >> (NUM_FRACTION_BITS - 9);
-        auto real2 = MUL_LONG(data[index].r, data[index].r) >> NUM_FRACTION_BITS;
-        auto imag2 = MUL_LONG(data[index].i, data[index].i) >> NUM_FRACTION_BITS;
-        float pow2 = (float)(real2 + imag2) / (float) (1<< NUM_FRACTION_BITS);
-        float amp = sqrtf(pow2);
-        float stft = logf(amp+ 1e-10f);
-        auto stft_int = (int16_t) (stft * (1<<NUM_FRACTION_BITS)) ;
-        //
-        int error = ((stft_int - log_amp[index] > 0) ?
-                (stft_int - log_amp[index]) :
-                (log_amp[index] - stft_int));
-        if (error > 100){
-            std::cout << "Error in "<<  index << " : " << error <<std::endl;
-            std::cout << "Real: " << data[index].r << ", Imag: " << data[index].i << std::endl;
-            std::cout << "Real^2:" <<real2 << ", Imag^2: " << imag2 << " -> " ;
+void error_check(quant_bit_width stft_int, int index, int32_t real, int32_t imag){
+    int error = ((stft_int - log_amp[index] > 0) ?
+            (stft_int - log_amp[index]) :
+            (log_amp[index] - stft_int));
+    bool sign_error = (bool) (((long)stft_int * (long)log_amp[index]) < 0);
+    if (error > 10 && sign_error){
+        std::cout << "Error in "<<  index << " : " << error <<std::endl;
+        std::cout << "Real: " << real << ", Imag: " << imag << std::endl;
 
-            std::cout << "Calc: " << stft_int << std::endl;
-            std::cout << "Ground truth: "<< log_amp[index] << std::endl;
-            std::cout << std::endl;
+        std::cout << "Calc: " << stft_int << std::endl;
+        std::cout << "Ground truth: "<< log_amp[index] << std::endl;
+        std::cout << std::endl;
+    }
+}
+
+void stft_rearrange(quant_bit_width* rawInputSignal, quant_bit_width* stftVec,
+                    std::size_t patchHeight, std::size_t patchWidth){
+    fft_complex_t data[512];
+    int overlap = 64;
+    for (int ch=0; ch<1; ch++){
+        for (int time_step=0; time_step<1; time_step++){
+            quant_bit_width* rawSignalPtr = rawInputSignal + ch * 3072 + (256 - overlap) * time_step;
+            initialize_stft(data, rawSignalPtr);
+            fft_fft(data, 9);
+            quant_bit_width * stftVecPtr = stftVec
+                    + ch * 15 * 160
+                    + (time_step / patchWidth) * patchWidth * patchHeight
+                    + (time_step % patchWidth);
+            for (int index =0 ; index < patchHeight; index++){
+                quant_bit_width stft_int = compute_log_amp(data[index].r, data[index].i);
+                *stftVecPtr = stft_int;
+                stftVecPtr += patchWidth;
+                error_check(stft_int, index, data[index].r, data[index].i);
+            }
+
+            stftVecPtr += patchHeight * patchWidth * 2;
+            for (int index = patchHeight ; index < 2*patchHeight; index++){
+                quant_bit_width stft_int = compute_log_amp(data[index].r, data[index].i);
+                *stftVecPtr = stft_int;
+                stftVecPtr += patchWidth;
+                error_check(stft_int, index, data[index].r, data[index].i);
+            }
         }
     }
 }
 
 int main() {
-    fft_func();
+    quant_bit_width* stftVec = raw_signal;
+    quant_bit_width* rawInputSignal = raw_signal + 160*15;
+    stft_rearrange(rawInputSignal, stftVec, 80, 5);
+
     return 0;
 }
