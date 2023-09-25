@@ -106,12 +106,28 @@ void error_check(quant_bit_width stft_int, int index, int32_t real, int32_t imag
     }
 }
 
+void rearrange_error(const quant_bit_width* stftVec,
+                     const quant_bit_width* rearrangedVec,
+                     int length){
+    for (int i=0; i<length; i++){
+        int error = stftVec[i] - rearrangedVec[i];
+        bool sign_error = (bool) (((long)stftVec[i] * (long)rearrangedVec[i]) <= 0);
+        if (error > 100 && sign_error){
+            std::cout << "Error in "<<  i << " : " << error <<std::endl;
+
+            std::cout << "Calc: " << stftVec[i] << std::endl;
+            std::cout << "Ground truth: "<< rearrangedVec[i] << std::endl;
+            std::cout << std::endl;
+        }
+    }
+}
+
 void stft_rearrange(quant_bit_width* rawInputSignal, quant_bit_width* stftVec,
                     std::size_t patchHeight, std::size_t patchWidth){
     fft_complex_t data[512];
     int overlap = 64;
-    for (int ch=0; ch<1; ch++){
-        for (int time_step=0; time_step<1; time_step++){
+    for (int ch=0; ch<20; ch++){
+        for (int time_step=0; time_step<15; time_step++){
             quant_bit_width* rawSignalPtr = rawInputSignal + ch * 3072 + (256 - overlap) * time_step;
             initialize_stft(data, rawSignalPtr);
             fft_fft(data, 9);
@@ -123,7 +139,7 @@ void stft_rearrange(quant_bit_width* rawInputSignal, quant_bit_width* stftVec,
                 quant_bit_width stft_int = compute_log_amp(data[index].r, data[index].i);
                 *stftVecPtr = stft_int;
                 stftVecPtr += patchWidth;
-                error_check(stft_int, index, data[index].r, data[index].i);
+//                error_check(stft_int, index, data[index].r, data[index].i);
             }
 
             stftVecPtr += patchHeight * patchWidth * 2;
@@ -131,7 +147,7 @@ void stft_rearrange(quant_bit_width* rawInputSignal, quant_bit_width* stftVec,
                 quant_bit_width stft_int = compute_log_amp(data[index].r, data[index].i);
                 *stftVecPtr = stft_int;
                 stftVecPtr += patchWidth;
-                error_check(stft_int, index, data[index].r, data[index].i);
+//                error_check(stft_int, index, data[index].r, data[index].i);
             }
         }
     }
@@ -141,6 +157,6 @@ int main() {
     quant_bit_width* stftVec = raw_signal;
     quant_bit_width* rawInputSignal = raw_signal + 160*15;
     stft_rearrange(rawInputSignal, stftVec, 80, 5);
-
+    rearrange_error(stftVec, rearranged, 2400*20);
     return 0;
 }
