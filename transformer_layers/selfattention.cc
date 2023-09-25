@@ -3,7 +3,6 @@
 #include <cmath>
 #include <iostream>
 //#include <cstdint>
-#include "debuggerFunctions.h"
 
 SingleHeadSelfAttn::SingleHeadSelfAttn(std::size_t pre_seq_len, std::size_t input_dim, std::size_t head_hidden_size,
                                        quant_bit_width **weightVector, uint32_t **flagVector, std::size_t kernel_dim,
@@ -38,57 +37,6 @@ SingleHeadSelfAttn::~SingleHeadSelfAttn() {
     delete key_layer;
     delete value_layer;
     delete softmax;
-}
-
-void SingleHeadSelfAttn::compute(std::size_t seq_len, quant_bit_width *input, quant_bit_width *output) {
-    query_layer->compute(seq_len, input, query_layer_out);
-    key_layer->compute(seq_len, input, key_layer_out);
-    value_layer->compute(seq_len, input, value_layer_out);
-
-
-#ifdef REARRANGE
-    std::cout << "Rearranged method" << std::endl;
-    Transpose::transpose_rearranged(key_layer_out, key_transposed_layer_out, head_hidden_size_,
-                                    pre_seq_len_, kernel_size_, max_col_);
-#ifdef SIMD
-    simdComputeRearranged(seq_len, query_layer_out, attention_scores, key_transposed_layer_out, nullptr,
-                          head_hidden_size_,
-                          seq_len, false);
-#else
-    smmComputeRearranged(seq_len, query_layer_out, attention_scores, key_transposed_layer_out, nullptr, head_hidden_size_,
-                            seq_len, false);
-#endif
-    softmax->computeRearranged(attention_scores, seq_len, kernel_size_);
-#ifdef SIMD
-    simdComputeRearranged(seq_len, attention_scores, output, value_layer_out, nullptr, seq_len, head_hidden_size_,
-                          false);
-#else
-    smmComputeRearranged(seq_len, attention_scores, output, value_layer_out, nullptr, seq_len, head_hidden_size_, false);
-#endif
-#else
-    std::cout<< "TiCSAT method" << std::endl;
-    Transpose::transpose(key_layer_out, key_transposed_layer_out, head_hidden_size_,
-                                    pre_seq_len_);
-#ifdef SIMD
-    simdCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out, nullptr,
-               head_hidden_size_, seq_len, false);
-#else
-    int mul_add = conventionalCompute(seq_len, query_layer_out, attention_scores, key_transposed_layer_out,
-                head_hidden_size_, seq_len);
-    std::cout<< "Number of operations: "<< mul_add << std::endl;
-#endif
-    softmax->compute(attention_scores, seq_len);
-#ifdef SIMD
-    simdCompute(seq_len, attention_scores, output, value_layer_out, nullptr,
-               seq_len, head_hidden_size_, false);
-#else
-    mul_add = conventionalCompute(seq_len, attention_scores, output, value_layer_out,
-                seq_len, head_hidden_size_);
-    std::cout<< "Number of operations: "<< mul_add << std::endl;
-#endif
-#endif
-
-//    softmax->post_softmax(output, seq_len, head_hidden_size_);
 }
 
 

@@ -5,6 +5,9 @@
 #ifndef FVLLMONTITRANSFORMER_WEIGHTSANDBIASES_H
 #define FVLLMONTITRANSFORMER_WEIGHTSANDBIASES_H
 
+#include "util.h"
+#include "../transformer.h"
+
 class WeightsAndBiases{
 private:
 public:

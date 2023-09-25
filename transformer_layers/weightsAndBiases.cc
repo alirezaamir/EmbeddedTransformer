@@ -2,7 +2,6 @@
 // Created by alireza on 9/20/23.
 //
 #include "util.h"
-#include "../transformer.h"
 #include "../data_cpp/data.cpp"
 #include "weightsAndBiases.h"
 #include "iostream"
