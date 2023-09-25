@@ -11,26 +11,6 @@
 #include "transformer_layers/weightsAndBiases.h"
 #include "SYLT-FFT/fft.h"
 
-quant_bit_width out[(D_SEQ+1) * D_MODEL];
-quant_bit_width intermediate[(D_SEQ+1) * (D_SEQ+1)];
-quant_bit_width qkv[(D_SEQ+1) * D_MODEL];
-quant_bit_width input_normalized[(D_SEQ+1) * D_MODEL];
-int32_t distances[2];
-float error_check(const quant_bit_width* groundTruth, const quant_bit_width* output, std::size_t length){
-    long error = 0;
-    for (int i=0; i<length; i++){
-        if (i<10)
-            std::cout << groundTruth[i] << " , " << output[i] << std::endl;
-        error += MUL_HQ(groundTruth[i] - output[i], groundTruth[i] - output[i]);
-//        if ((groundTruth[i] - output[i] > 20) || (groundTruth[i] - output[i] < -20) )
-//            std::cout<< i << ": " << groundTruth[i] << " , " << output[i] << std::endl;
-    }
-    error = (error >> NUM_FRACTION_BITS);
-    std::cout<< error << std::endl;
-
-    return (float) error/ (float) length;
-}
-
 void prototype_distances(quant_bit_width* prototypeVec,
                           const quant_bit_width* modelOutput,
                           int32_t* distVec,
@@ -48,7 +28,11 @@ void prototype_distances(quant_bit_width* prototypeVec,
 }
 
 
-void inference(){
+void transformerInference(quant_bit_width * transformerInput,
+                          quant_bit_width * transformerOutput,
+                          quant_bit_width* input_normalized,
+                          quant_bit_width* qkv,
+                          quant_bit_width* intermediate){
     quant_bit_width * weightVec[NUM_LAYERS*(3*NUM_HEAD+5)+5];
     quant_bit_width * biasVec[NUM_LAYERS*(3*NUM_HEAD+5)+5];
     WeightsAndBiases::getWeights(weightVec);
@@ -58,12 +42,8 @@ void inference(){
 
     TransformerBlock selfatten(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec,
                                clsTokenVector, posMatrix);
-    selfatten.computeFixedPoint(D_SEQ, input_signal, input_normalized, out, intermediate, qkv);
-
-    prototype_distances(prototypes, out, distances, D_MODEL, 2);
-    std::cout<<"Distances : " << std::endl;
-    for (int i = 0; i< 2; i++)
-        std::cout<<"From the prototype of class " << i << " = " << distances[i] <<  std::endl;
+    selfatten.computeFixedPoint(D_SEQ, transformerInput, input_normalized,
+                                transformerOutput, intermediate, qkv);
 }
 
 quant_bit_width compute_log_amp(int32_t real, int32_t imag){
@@ -88,21 +68,6 @@ void initialize_stft(fft_complex_t* data, const quant_bit_width * raw_input_sign
     for (int i = 256; i < 512; i++) {  // Padding for nfft=2
         data[i].r = 0; // Set the real part to 0
         data[i].i = 0; // Set the imaginary part to 0
-    }
-}
-
-void error_check(quant_bit_width stft_int, int index, int32_t real, int32_t imag){
-    int error = ((stft_int - log_amp[index] > 0) ?
-            (stft_int - log_amp[index]) :
-            (log_amp[index] - stft_int));
-    bool sign_error = (bool) (((long)stft_int * (long)log_amp[index]) < 0);
-    if (error > 10 && sign_error){
-        std::cout << "Error in "<<  index << " : " << error <<std::endl;
-        std::cout << "Real: " << real << ", Imag: " << imag << std::endl;
-
-        std::cout << "Calc: " << stft_int << std::endl;
-        std::cout << "Ground truth: "<< log_amp[index] << std::endl;
-        std::cout << std::endl;
     }
 }
 
@@ -154,9 +119,21 @@ void stft_rearrange(quant_bit_width* rawInputSignal, quant_bit_width* stftVec,
 }
 
 int main() {
+    // Make memory map
     quant_bit_width* stftVec = raw_signal;
     quant_bit_width* rawInputSignal = raw_signal + 160*15;
+
+    quant_bit_width* out = raw_signal + 160*15*20;//[(D_SEQ+1) * D_MODEL];
+    quant_bit_width* intermediate = raw_signal + 16*1024;  // +32KB //[(D_SEQ+1) * (D_SEQ+1)];
+    quant_bit_width* qkv = out + 2048; // [(D_SEQ+1) * D_MODEL];
+    quant_bit_width* input_normalized = out + 4096;//[(D_SEQ+1) * D_MODEL];
+    int32_t distances[2];
+
     stft_rearrange(rawInputSignal, stftVec, 80, 5);
-    rearrange_error(stftVec, rearranged, 2400*20);
+    transformerInference(stftVec, out, input_normalized, qkv, intermediate);
+    prototype_distances(prototypes, out, distances, D_MODEL, 2);
+    std::cout<<"Distances : " << std::endl;
+    for (int i = 0; i< 2; i++)
+        std::cout<<"From the prototype of class " << i << " = " << distances[i] <<  std::endl;
     return 0;
 }
