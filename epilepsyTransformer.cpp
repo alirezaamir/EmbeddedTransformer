@@ -129,11 +129,19 @@ int main() {
     quant_bit_width* input_normalized = out + 4096;//[(D_SEQ+1) * D_MODEL];
     int32_t distances[2];
 
-    stft_rearrange(rawInputSignal, stftVec, 80, 5);
-    transformerInference(stftVec, out, input_normalized, qkv, intermediate);
-    prototype_distances(prototypes, out, distances, D_MODEL, 2);
-    std::cout<<"Distances : " << std::endl;
-    for (int i = 0; i< 2; i++)
-        std::cout<<"From the prototype of class " << i << " = " << distances[i] <<  std::endl;
+//    stft_rearrange(rawInputSignal, stftVec, 80, 5);
+    transformerInference(STFT_out, out, input_normalized, qkv, intermediate);
+    int sum=0;
+    for (int i=0; i<(D_SEQ+1) * D_MODEL ; i++){
+        if (i<10)
+            std::cout << encoder_out[i] << " , " << STFT_out[i] << std::endl;
+
+        sum += ((STFT_out[i] - encoder_out[i])> 0? (STFT_out[i] - encoder_out[i]) : -(STFT_out[i] - encoder_out[i]));
+    }
+    std::cout<< "Total Error: " << (sum >> NUM_FRACTION_BITS) << std::endl;
+//    prototype_distances(prototypes, out, distances, D_MODEL, 2);
+//    std::cout<<"Distances : " << std::endl;
+//    for (int i = 0; i< 2; i++)
+//        std::cout<<"From the prototype of class " << i << " = " << distances[i] <<  std::endl;
     return 0;
 }
