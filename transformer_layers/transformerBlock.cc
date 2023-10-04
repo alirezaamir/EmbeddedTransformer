@@ -61,7 +61,7 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
     token->posEmbedding(input);
 
 
-    for (int l=0; l< 2; l++){
+    for (int l=0; l< 4; l++){
         transformer_layer_0_addNorm[l]->normalize(input, input_normalized);
 
         for (int n=0; n<NUM_HEAD; n++){
@@ -83,7 +83,7 @@ void TransformerBlock::computeFixedPoint(std::size_t seq_len, quant_bit_width *i
         transformer_layer_1_addNorm[l]->add(input, output);
     }
 
-//    mlp_head_norm->normalize(input, input_normalized);
-//    mlp_head_linear->compute(1, input_normalized, output);
+    mlp_head_norm->normalize(input, input_normalized);
+    mlp_head_linear->compute(1, input_normalized, output);
 
 }
