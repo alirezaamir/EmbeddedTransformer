@@ -123,7 +123,7 @@ void getBiases(quant_bit_width * biasVec[]){
     /* *************************** Layer 1 ***************************** */
     biasVec[biasVectorIndex++] = transformer_layers_0_0_norm_bias;
     for (int i=0; i<3*4; i++)
-        biasVec[biasVectorIndex++] = (quant_bit_width *) nullptr;
+        biasVec[biasVectorIndex++] = (quant_bit_width *) NULL;
 
     biasVec[biasVectorIndex++] = transformer_layers_0_0_fn_projection_bias;
     biasVec[biasVectorIndex++] = transformer_layers_0_1_norm_bias;
@@ -135,7 +135,7 @@ void getBiases(quant_bit_width * biasVec[]){
     biasVec[biasVectorIndex++] = transformer_layers_1_0_norm_bias;
 
     for (int i=0; i<3*4; i++)
-        biasVec[biasVectorIndex++] = (quant_bit_width *) nullptr;
+        biasVec[biasVectorIndex++] = (quant_bit_width *) NULL;
 
     biasVec[biasVectorIndex++] = transformer_layers_1_0_fn_projection_bias;
     biasVec[biasVectorIndex++] = transformer_layers_1_1_norm_bias;
@@ -147,7 +147,7 @@ void getBiases(quant_bit_width * biasVec[]){
     biasVec[biasVectorIndex++] = transformer_layers_2_0_norm_bias;
 
     for (int i=0; i<3*4; i++)
-        biasVec[biasVectorIndex++] = (quant_bit_width *) nullptr;
+        biasVec[biasVectorIndex++] = (quant_bit_width *) NULL;
 
     biasVec[biasVectorIndex++] = transformer_layers_2_0_fn_projection_bias;
     biasVec[biasVectorIndex++] = transformer_layers_2_1_norm_bias;
@@ -159,7 +159,7 @@ void getBiases(quant_bit_width * biasVec[]){
     biasVec[biasVectorIndex++] = transformer_layers_3_0_norm_bias;
 
     for (int i=0; i<3*4; i++)
-        biasVec[biasVectorIndex++] = (quant_bit_width *) nullptr;
+        biasVec[biasVectorIndex++] = (quant_bit_width *) NULL;
 
     biasVec[biasVectorIndex++] = transformer_layers_3_0_fn_projection_bias;
     biasVec[biasVectorIndex++] = transformer_layers_3_1_norm_bias;

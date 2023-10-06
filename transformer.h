@@ -5,6 +5,8 @@
 #ifndef FVLLMONTITRANSFORMER_TRANSFORMER_H
 #define FVLLMONTITRANSFORMER_TRANSFORMER_H
 
+#include <stdint-gcc.h>
+
 #define NUM_FRACTION_BITS 12
 #define MUL(x, y) (int32_t) (((int32_t)(x) * (int32_t)(y)) >> NUM_FRACTION_BITS)
 #define MUL_LONG(x, y) (int64_t) (((int64_t)(x) * (int64_t)(y)))

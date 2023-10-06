@@ -16,8 +16,6 @@ typedef struct {
 // Function prototypes
 void transpose_quant(const quant_bit_width* input, quant_bit_width* output, size_t width, size_t height);
 
-void multihead_transpose(const int* input, int* output, size_t seq_len, size_t head_hidden_size, size_t num_head);
-
 
 void multihead_transpose(const quant_bit_width * input, quant_bit_width* output, size_t seq_len,
                                     size_t head_hidden_size, size_t num_head) {
