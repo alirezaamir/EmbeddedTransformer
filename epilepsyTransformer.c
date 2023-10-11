@@ -47,12 +47,12 @@ void transformerInference(quant_bit_width * transformerInput, quant_bit_width * 
 quant_bit_width compute_log_amp(int32_t real, int32_t imag){
     real = MUL_HQ(real, 25) >> (NUM_FRACTION_BITS - 9);
     imag = MUL_HQ(imag, 25) >> (NUM_FRACTION_BITS - 9);
-    auto real2 = MUL_LONG(real, real) >> NUM_FRACTION_BITS;
-    auto imag2 = MUL_LONG(imag, imag) >> NUM_FRACTION_BITS;
+    int32_t real2 = MUL_LONG(real, real) >> NUM_FRACTION_BITS;
+    int32_t imag2 = MUL_LONG(imag, imag) >> NUM_FRACTION_BITS;
     float pow2 = (float)(real2 + imag2) / (float) (1<< NUM_FRACTION_BITS);
     float amp = sqrtf(pow2);
     float stft = logf(amp+ 1e-10f);
-    auto stft_int = (quant_bit_width) (stft * (1<<NUM_FRACTION_BITS));
+    quant_bit_width stft_int = (quant_bit_width) (stft * (1<<NUM_FRACTION_BITS));
     return stft_int;
 }
 
@@ -101,7 +101,7 @@ int main() {
     quant_bit_width* input_normalized = out + 4096;
     int32_t distances[2];
     stft_rearrange(rawInputSignal, stftVec, 80, 5);
-    transformerInference(STFT_out, out, input_normalized, qkv, intermediate);
+    transformerInference(stftVec, out, input_normalized, qkv, intermediate);
     prototype_distances(prototypes, out, distances, D_MODEL, 2);
     printf("Distances : \n");
     for (int i = 0; i< 2; i++)

@@ -5,22 +5,13 @@
 #ifndef FVLLMONTITRANSFORMER_TRANSFORMER_H
 #define FVLLMONTITRANSFORMER_TRANSFORMER_H
 
-#include <stdint-gcc.h>
+#include <stdint.h>
+#include <stddef.h>
+#include "param.h"
 
-#define NUM_FRACTION_BITS 12
-#define MUL(x, y) (int32_t) (((int32_t)(x) * (int32_t)(y)) >> NUM_FRACTION_BITS)
-#define MUL_LONG(x, y) (int64_t) (((int64_t)(x) * (int64_t)(y)))
-#define MUL_HQ(x, y) (int32_t) (((int32_t)(x) * (int32_t)(y)))
-#define SHIFT(x) ((x) >> NUM_FRACTION_BITS)
-
-#define D_Q 4
-#define D_SEQ 120
-#define D_MODEL 16
-#define NUM_HEAD 4
-#define NUM_LAYERS 4
-#define D_FF 4
-#define D_EMBEDDING 400
-
-typedef int16_t quant_bit_width;
+float error_check(const quant_bit_width* groundTruth, const quant_bit_width* output, size_t length);
+void prototype_distances(quant_bit_width* prototypeVec, const quant_bit_width* modelOutput, int32_t* distVec, size_t prototypeLength, int prototypeNums);
+void transformerInference(quant_bit_width * transformerInput, quant_bit_width * transformerOutput, quant_bit_width* input_normalized, quant_bit_width* qkv, quant_bit_width* intermediate);
+quant_bit_width compute_log_amp(int32_t real, int32_t imag);
 
 #endif //FVLLMONTITRANSFORMER_TRANSFORMER_H
