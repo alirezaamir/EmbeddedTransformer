@@ -1,3 +1,15 @@
+# Epilepsy Transformer
+The implementation of this transformer is based on this paper:
+Ma, Yongpei, et al. "TSD: Transformers for Seizure Detection." bioRxiv (2023): 2023-01.
+
+## C code impementation:
+you can compile epilepsyTransformer.c and transformer_C. Also, add this repository to the main folder: https://github.com/stg/SYLT-FFT/tree/master
+
+
+## C++ code impementation:
+
+you can compile epilepsyTransformer.cpp and transformer_layers. Also, add this repository to the main folder: https://github.com/stg/SYLT-FFT/tree/master
+
 # TiC-SAT
 
 TiC-SAT is an architecture and framework for tightly-coupled systolic arrays devoted to accelerating transformer applications. 
