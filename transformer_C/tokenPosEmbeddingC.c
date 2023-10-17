@@ -5,19 +5,11 @@
 #include "tokenPosEmbeddingC.h"
 
 
-void destroyTokenPosEmbedding(TokenPosEmbedding* tokenPosEmbedding) {
-    // You can add any necessary cleanup code here
-    free(tokenPosEmbedding);
-}
-
-TokenPosEmbedding* createTokenPosEmbedding(quant_bit_width* pos_matrix, quant_bit_width* cls_token_vector, size_t seq_len, size_t input_dim, size_t pos_matrix_dim) {
-    TokenPosEmbedding* tokenPosEmbedding = (TokenPosEmbedding*) malloc(sizeof(TokenPosEmbedding));
+void createTokenPosEmbedding(TokenPosEmbedding* tokenPosEmbedding, quant_bit_width* pos_matrix, quant_bit_width* cls_token_vector, size_t seq_len, size_t input_dim, size_t pos_matrix_dim) {
     tokenPosEmbedding->cls_token_vector_ = cls_token_vector;
     tokenPosEmbedding->pos_matrix_ = pos_matrix;
     tokenPosEmbedding->seq_len_ = seq_len;
     tokenPosEmbedding->input_dim_ = input_dim;
-    tokenPosEmbedding->pos_matrix_dim_ = pos_matrix_dim;
-    return tokenPosEmbedding;
 }
 
 void clsConcatenate(TokenPosEmbedding* tpe, quant_bit_width* input, quant_bit_width* concatenated_input) {

@@ -11,12 +11,7 @@
 #include <stdlib.h>
 #include "../param.h"
 
-typedef struct {
-} Softmax;
-
-Softmax* createSoftmax();
-void destroySoftmax(Softmax *softmax);
-void computeSoftmax(Softmax* softmax, int16_t* input, size_t seq_len);
+void computeSoftmax(int16_t* input, size_t seq_len);
 
 
 #endif //FVLLMONTITRANSFORMER_SOFTMAXC_H

@@ -18,7 +18,6 @@ typedef struct {
     Dense* query_layer;
     Dense* key_layer;
     Dense* value_layer;
-    Softmax* softmax;
     int16_t* query_layer_out;
     int16_t* key_layer_out;
     int16_t* key_transposed_layer_out;
@@ -28,7 +27,7 @@ typedef struct {
     size_t head_hidden_size;
 } SingleHeadSelfAttn;
 
-SingleHeadSelfAttn* create_SingleHeadSelfAttn(size_t pre_seq_len, size_t input_dim, size_t head_hidden_size, int16_t** weightVector);
+void create_SingleHeadSelfAttn(SingleHeadSelfAttn*, size_t pre_seq_len, size_t input_dim, size_t head_hidden_size, int16_t** weightVector);
 void destroy_SingleHeadSelfAttn(SingleHeadSelfAttn* self_attn);
 void compute_SingleHeadSelfAttn(SingleHeadSelfAttn* self_attn, int16_t* input, int16_t* output, int16_t* qkv, int16_t* intermediate);
 

@@ -19,7 +19,7 @@ typedef struct {
     int16_t* bias; // quant_bit_width is a typedef for int16_t
 } Dense;
 
-Dense* createDense(size_t input_dim, size_t output_dim, quant_bit_width *weight, quant_bit_width* bias);
+void createDense(Dense* dense, size_t input_dim, size_t output_dim, quant_bit_width *weight, quant_bit_width* bias);
 void destroyDense(Dense* dense);
 void multiplyweight(Dense* dense, size_t seq_len, int16_t* input, int16_t* output);
 void addbias(Dense* dense, size_t seq_len, int16_t* output);

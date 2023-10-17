@@ -41,7 +41,6 @@ void transformerInference(quant_bit_width * transformerInput, quant_bit_width * 
     quant_bit_width * posMatrix = getPosEmbedding();
     TransformerBlock* selfatten = createTransformerBlock(D_SEQ, D_MODEL, D_Q, NUM_HEAD, D_FF, weightVec, biasVec, clsTokenVector, posMatrix);
     computeFixedPoint(selfatten, D_SEQ, transformerInput, input_normalized, transformerOutput, intermediate, qkv);
-    destroyTransformerBlock(selfatten);
 }
 
 quant_bit_width compute_log_amp(int32_t real, int32_t imag){

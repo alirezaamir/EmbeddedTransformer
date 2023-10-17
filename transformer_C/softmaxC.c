@@ -4,23 +4,8 @@
 
 #include "softmaxC.h"
 
-// Function to create a Softmax instance
-Softmax* createSoftmax() {
-    // Allocate memory for the Softmax struct
-    Softmax* softmax = (Softmax*) malloc(sizeof(Softmax));
 
-    // Initialize any necessary fields here
-
-    return softmax;
-}
-
-void destroySoftmax(Softmax * softmax) {
-    // Free the memory allocated for the Dense struct
-    free(softmax);
-}
-
-
-void computeSoftmax(Softmax* softmax, int16_t* input, size_t seq_len) {
+void computeSoftmax(int16_t* input, size_t seq_len) {
     size_t width = seq_len;
     float input_float = 0.0f;
     for (int i = 0; i < seq_len; i++) {

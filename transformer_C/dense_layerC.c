@@ -4,13 +4,11 @@
 
 #include "dense_layerC.h"
 
-Dense* createDense(size_t input_dim, size_t output_dim, quant_bit_width *weight, quant_bit_width* bias) {
-    Dense* dense = (Dense*) malloc(sizeof(Dense));
+void createDense(Dense* dense, size_t input_dim, size_t output_dim, quant_bit_width *weight, quant_bit_width* bias) {
     dense->input_size_ = input_dim;
     dense->output_size_ = output_dim;
     dense->weight = weight;
     dense->bias = bias;
-    return dense;
 }
 
 void destroyDense(Dense* dense) {
