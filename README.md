@@ -11,7 +11,7 @@ you can compile epilepsyTransformer.c and transformer_C. Also, add this reposito
 you can compile epilepsyTransformer.cpp and transformer_layers. Also, add this repository to the main folder: https://github.com/stg/SYLT-FFT/tree/master
 
 ## Reference
-If you have used TiC-SAT in your academic articles, we appreciate it if you cite the following paper:
+If you have used these codes in your academic articles, we appreciate it if you cite the following paper:
 
 ```
 Amirshahi, A., Dan, J., Miranda Calero, J. A., Aminifar, A., & Atienza Alonso, D. (2024).
